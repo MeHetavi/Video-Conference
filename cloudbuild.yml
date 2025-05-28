@@ -1,9 +1,8 @@
 steps:
-  # Step 1: Create firewall rule for WebRTC UDP ports
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
       [
-        'compute', 'firewall-rules', 'create', 'allow-mediasoup-udp',
+        'gcloud', 'compute', 'firewall-rules', 'create', 'allow-mediasoup-udp',
         '--direction', 'INGRESS',
         '--priority', '1000',
         '--network', 'default',
@@ -13,11 +12,10 @@ steps:
         '--target-tags', 'mediasoup-sfu'
       ]
 
-  # Step 2: Create firewall rule for TCP 3016
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
       [
-        'compute', 'firewall-rules', 'create', 'allow-mediasoup-tcp',
+        'gcloud', 'compute', 'firewall-rules', 'create', 'allow-mediasoup-tcp',
         '--direction', 'INGRESS',
         '--priority', '1000',
         '--network', 'default',
@@ -27,17 +25,17 @@ steps:
         '--target-tags', 'mediasoup-sfu'
       ]
 
-  # Step 3: Create VM with startup script to run your app
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
       [
-        'compute', 'instances', 'create', 'mediasoup-sfu-instance',
+        'gcloud', 'compute', 'instances', 'create', 'mediasoup-sfu-instance',
         '--zone', 'us-central1-a',
         '--machine-type', 'e2-medium',
         '--tags', 'http-server,https-server,mediasoup-sfu',
         '--metadata-from-file', 'startup-script=startup.sh',
         '--boot-disk-size', '20GB'
       ]
+
 
 timeout: 1800s
 options:
