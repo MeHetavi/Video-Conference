@@ -2,8 +2,8 @@
 
 # Variables
 PROJECT_ID=$(gcloud config get-value project)
-INSTANCE_NAME="mediasoup-sfu-instance"
-ZONE="us-central1-a"
+INSTANCE_NAME="mediasoup-sfu-server"
+ZONE="asia-south1-b"
 MACHINE_TYPE="e2-medium"
 
 # Create the VM if it doesn't exist
