@@ -1,141 +1,44 @@
 steps:
-  # Step 1: Pull the base image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['pull', 'node:12']
-
-  # Step 2: Build the Docker image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: [
-      'build',
-      '-t', 'gcr.io/$PROJECT_ID/mediasoup-sfu:$COMMIT_SHA',
-      '-t', 'gcr.io/$PROJECT_ID/mediasoup-sfu:latest',
-      '.'
-    ]
-
-  # Step 3: Push the Docker image to Google Container Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/mediasoup-sfu:$COMMIT_SHA']
-
-  # Step 4: Deploy to Google Cloud Run
+  # Step 1: Create firewall rule for WebRTC UDP ports
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
-    args: [
-      'compute', 'instances', 'create-with-container', 'mediasoup-sfu-instance',
-      '--container-image', 'gcr.io/$PROJECT_ID/mediasoup-sfu:$COMMIT_SHA',
-      '--machine-type', 'e2-medium',
-      '--zone', 'us-central1-a',
-      '--tags', 'http-server,https-server,mediasoup-sfu',
-      '--container-restart-policy', 'always',
-      '--container-privileged',
-      '--container-port', '3016',
-      '--create-disk', 'name=mediasoup-sfu-disk,size=10GB,type=pd-standard,boot=yes'
-    ]
-
-  # Step 5: Create firewall rules for WebRTC UDP ports
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
-    args: [
-      'compute', 'firewall-rules', 'create', 'allow-mediasoup-udp',
-      '--direction', 'INGRESS',
-      '--priority', '1000',
-      '--network', 'default',
-      '--action', 'ALLOW',
-      '--rules', 'udp:10000-10100',
-      '--source-ranges', '0.0.0.0/0',
-      '--target-tags', 'mediasoup-sfu'
-    ]
-
-  # Step 6: Create firewall rule for HTTPS
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
-    args: [
-      'compute', 'firewall-rules', 'create', 'allow-mediasoup-https',
-      '--direction', 'INGRESS',
-      '--priority', '1000',
-      '--network', 'default',
-      '--action', 'ALLOW',
-      '--rules', 'tcp:3016',
-      '--source-ranges', '0.0.0.0/0',
-      '--target-tags', 'mediasoup-sfu'
-    ]
-
-  # Step 7: Get the external IP address and update config.js
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'bash'
     args:
-      - '-c'
-      - |
-        EXTERNAL_IP=$(gcloud compute instances describe mediasoup-sfu-instance --zone us-central1-a --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
-        echo "External IP: $${EXTERNAL_IP}"
-        
-        # Create a temporary config file with the updated IP
-        cat > src/config.js << EOF
-        const os = require('os')
-        const ifaces = os.networkInterfaces()
+      [
+        'compute', 'firewall-rules', 'create', 'allow-mediasoup-udp',
+        '--direction', 'INGRESS',
+        '--priority', '1000',
+        '--network', 'default',
+        '--action', 'ALLOW',
+        '--rules', 'udp:10000-10100',
+        '--source-ranges', '0.0.0.0/0',
+        '--target-tags', 'mediasoup-sfu'
+      ]
 
-        module.exports = {
-          listenIp: '0.0.0.0',
-          listenPort: 3016,
-          sslCrt: '../ssl/cert.pem',
-          sslKey: '../ssl/key.pem',
+  # Step 2: Create firewall rule for TCP 3016
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args:
+      [
+        'compute', 'firewall-rules', 'create', 'allow-mediasoup-tcp',
+        '--direction', 'INGRESS',
+        '--priority', '1000',
+        '--network', 'default',
+        '--action', 'ALLOW',
+        '--rules', 'tcp:3016',
+        '--source-ranges', '0.0.0.0/0',
+        '--target-tags', 'mediasoup-sfu'
+      ]
 
-          mediasoup: {
-            numWorkers: Object.keys(os.cpus()).length,
-            worker: {
-              rtcMinPort: 10000,
-              rtcMaxPort: 10100,
-              logLevel: 'warn',
-              logTags: [
-                'info',
-                'ice',
-                'dtls',
-                'rtp',
-                'srtp',
-                'rtcp'
-              ]
-            },
-            router: {
-              mediaCodecs: [
-                {
-                  kind: 'audio',
-                  mimeType: 'audio/opus',
-                  clockRate: 48000,
-                  channels: 2
-                },
-                {
-                  kind: 'video',
-                  mimeType: 'video/VP8',
-                  clockRate: 90000,
-                  parameters: {
-                    'x-google-start-bitrate': 1000
-                  }
-                }
-              ]
-            },
-            webRtcTransport: {
-              listenIps: [
-                {
-                  ip: '0.0.0.0',
-                  announcedIp: '$${EXTERNAL_IP}'
-                }
-              ],
-              maxIncomingBitrate: 1500000,
-              initialAvailableOutgoingBitrate: 1000000
-            }
-          }
-        }
-        EOF
-        
-        # Update the container with the new config
-        gcloud compute instances update-container mediasoup-sfu-instance \
-          --zone us-central1-a \
-          --container-image gcr.io/$PROJECT_ID/mediasoup-sfu:$COMMIT_SHA
+  # Step 3: Create VM with startup script to run your app
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args:
+      [
+        'compute', 'instances', 'create', 'mediasoup-sfu-instance',
+        '--zone', 'us-central1-a',
+        '--machine-type', 'e2-medium',
+        '--tags', 'http-server,https-server,mediasoup-sfu',
+        '--metadata-from-file', 'startup-script=startup.sh',
+        '--boot-disk-size', '20GB'
+      ]
 
-images:
-  - 'gcr.io/$PROJECT_ID/mediasoup-sfu:$COMMIT_SHA'
-  - 'gcr.io/$PROJECT_ID/mediasoup-sfu:latest'
-
-timeout: '1800s'
-
+timeout: 1800s
 options:
-  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
+  logging: CLOUD_LOGGING_ONLY
