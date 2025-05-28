@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Video Conference</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/modules/mediasoupclient.min.js"></script>
+    <script src="/modules/EventEmitter.min.js"></script>
+    <script src="https://kit.fontawesome.com/abdff43453.js" crossorigin="anonymous"></script>
+    <script src="/RoomClient.js"></script>
+</head>
+
+<body>
+    <div class="login-container" id="loginContainer">
+        <div class="login-blur" id="loginBlur">
+            <div id="login">
+                <h1>Join Meeting</h1>
+                <label for="roomidInput">Room ID</label>
+                <input id="roomidInput" placeholder="Enter room ID" disabled value="<%= roomId %>" type="text" />
+                <label for="nameInput">Your Name</label>
+                <input id="nameInput" value="<%= username %>" disabled type="text" />
+                <button id="joinButton" onclick="joinRoom(nameInput.value, roomidInput.value)">
+                    Join Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="callScreen" class="hidden">
+        <!-- Video area with strict height boundary -->
+        <div id="videoMedia" class="hidden">
+            <!-- Remote videos container with fixed boundaries -->
+            <div id="remoteVideos"></div>
+            <div id="remoteAudios"></div>
+
+            <!-- Local video in top right -->
+            <div id="localMedia"></div>
+
+            <!-- Participants panel -->
+            <div id="participantsPanel" class="participants-panel hidden">
+                <div class="participants-header">
+                    <h6>Participants</h6>
+                    <span class="participants-count" id="participantsCount">0 users</span>
+                </div>
+                <div id="participantsList">
+                    <!-- Participants will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls at the bottom with fixed height -->
+        <div id="control" class="hidden">
+            <button id="startAudioButton" class="control-button hidden"
+                onclick="rc.produce(RoomClient.mediaType.audio, audioSelect.value)">
+                <!-- <i class="fas fa-microphone"></i> -->
+                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                    fill="#e3e3e3">
+                    <path
+                        d="M480-400q-50 0-85-35t-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35Zm0-240Zm-40 520v-123q-104-14-172-93t-68-184h80q0 83 58.5 141.5T480-320q83 0 141.5-58.5T680-520h80q0 105-68 184t-172 93v123h-80Zm40-360q17 0 28.5-11.5T520-520v-240q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760v240q0 17 11.5 28.5T480-480Z" />
+                </svg>
+            </button>
+            <button id="stopAudioButton" class="control-button hidden"
+                onclick="rc.closeProducer(RoomClient.mediaType.audio)">
+                <!-- <i class="fas fa-microphone-slash"></i> -->
+                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                    fill="#e3e3e3">
+                    <path
+                        d="m710-362-58-58q14-23 21-48t7-52h80q0 44-13 83.5T710-362ZM480-594Zm112 112-72-72v-206q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760v126l-80-80v-46q0-50 35-85t85-35q50 0 85 35t35 85v240q0 11-2.5 20t-5.5 18ZM440-120v-123q-104-14-172-93t-68-184h80q0 83 57.5 141.5T480-320q34 0 64.5-10.5T600-360l57 57q-29 23-63.5 39T520-243v123h-80Zm352 64L56-792l56-56 736 736-56 56Z" />
+                </svg>
+            </button>
+
+            <button id="startVideoButton" class="control-button hidden"
+                onclick="rc.produce(RoomClient.mediaType.video, videoSelect.value)">
+                <!-- <i class="fas fa-video"></i> -->
+                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                    fill="#e3e3e3">
+                    <path
+                        d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h480q33 0 56.5 23.5T720-720v180l160-160v440L720-420v180q0 33-23.5 56.5T640-160H160Zm0-80h480v-480H160v480Zm0 0v-480 480Z" />
+                </svg>
+            </button>
+            <button id="stopVideoButton" class="control-button hidden"
+                onclick="rc.closeProducer(RoomClient.mediaType.video)">
+                <!-- <i class="fas fa-video-slash"></i> -->
+                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                    fill="#e3e3e3">
+                    <path
+                        d="M880-260 720-420v67l-80-80v-287H353l-80-80h367q33 0 56.5 23.5T720-720v180l160-160v440ZM822-26 26-822l56-56L878-82l-56 56ZM498-575ZM382-464ZM160-800l80 80h-80v480h480v-80l80 80q0 33-23.5 56.5T640-160H160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800Z" />
+                </svg>
+            </button>
+
+            <button id="startScreenButton" class="control-button hidden"
+                onclick="rc.produce(RoomClient.mediaType.screen)">
+                <!-- <i class="fas fa-desktop"></i> -->
+                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                    fill="#e3e3e3">
+                    <path
+                        d="M444-336h72v-150l57.12 57.3L624-480 480-624 336-480l51 51 57-57v150ZM168-192q-29.7 0-50.85-21.16Q96-234.32 96-264.04v-432.24Q96-726 117.15-747T168-768h624q29.7 0 50.85 21.16Q864-725.68 864-695.96v432.24Q864-234 842.85-213T792-192H168Zm0-72h624v-432H168v432Zm0 0v-432 432Z" />
+                </svg>
+            </button>
+            <button id="stopScreenButton" class="control-button hidden"
+                onclick="rc.closeProducer(RoomClient.mediaType.screen)">
+                <i class="fas fa-stop"></i>
+            </button>
+
+            <button id="participantsButton" class="control-button hidden" onclick="toggleParticipants()">
+                <!-- <i class="fas fa-users"></i> -->
+                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                    fill="#e3e3e3">
+                    <path
+                        d="M0-240v-59q0-51 45-80t123-29q15 0 30 1.5t30 4.5q-17 20-26.5 45t-9.5 50.56V-240H0Zm240 0v-61q0-27.86 14.5-50.93T293-387q44-22 91-33.5t95.53-11.5Q529-432 576-420.5t91 33.5q24 12 38.5 35.07T720-301v61H240Zm528 0v-67.37q0-26.95-9.5-50.79T732-402q17-3 31.5-4.5T792-408q78 0 123 29t45 80v59H768Zm-454-72h332q-7-17-59.5-32.5T480-360q-54 0-106.5 15.5T314-312ZM167.79-456Q138-456 117-477.03q-21-21.02-21-50.55Q96-558 117.03-579q21.02-21 50.55-21Q198-600 219-579.24t21 51.45Q240-498 219.24-477t-51.45 21Zm624 0Q762-456 741-477.03q-21-21.02-21-50.55Q720-558 741.03-579q21.02-21 50.55-21Q822-600 843-579.24t21 51.45Q864-498 843.24-477t-51.45 21ZM479.5-480q-49.5 0-84.5-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85.5q0 49.5-35 84.5t-85.5 35Zm.5-72q20.4 0 34.2-13.8Q528-579.6 528-600q0-20.4-13.8-34.2Q500.4-648 480-648q-20.4 0-34.2 13.8Q432-620.4 432-600q0 20.4 13.8 34.2Q459.6-552 480-552Zm0 240Zm0-288Z" />
+                </svg>
+            </button>
+
+            <button id="devicesButton" class="control-button hidden" onclick="rc.showDevices()">
+                <!-- <i class="fas fa-cog"></i> -->
+                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                    fill="#e3e3e3">
+                    <path
+                        d="m403-96-22-114q-23-9-44.5-21T296-259l-110 37-77-133 87-76q-2-12-3-24t-1-25q0-13 1-25t3-24l-87-76 77-133 110 37q19-16 40.5-28t44.5-21l22-114h154l22 114q23 9 44.5 21t40.5 28l110-37 77 133-87 76q2 12 3 24t1 25q0 13-1 25t-3 24l87 76-77 133-110-37q-19 16-40.5 28T579-210L557-96H403Zm59-72h36l19-99q38-7 71-26t57-48l96 32 18-30-76-67q6-17 9.5-35.5T696-480q0-20-3.5-38.5T683-554l76-67-18-30-96 32q-24-29-57-48t-71-26l-19-99h-36l-19 99q-38 7-71 26t-57 48l-96-32-18 30 76 67q-6 17-9.5 35.5T264-480q0 20 3.5 38.5T277-406l-76 67 18 30 96-32q24 29 57 48t71 26l19 99Zm18-168q60 0 102-42t42-102q0-60-42-102t-102-42q-60 0-102 42t-42 102q0 60 42 102t102 42Zm0-144Z" />
+                </svg>
+            </button>
+
+            <button id="exitButton" class="control-button hidden" onclick="rc.exit()">
+                <!-- <i class="fas fa-phone-slash"></i> -->
+                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="red">
+                    <path
+                        d="m139-317-79-80q-14-14-14.5-33.5T59-464q79-85 187-134.5T480-648q126 0 234 49.5T901-464q14 14 13.5 33.5T900-397l-79 80q-11 11-28 14t-34-9l-115-82q-9-7-14.5-17.5t-5.5-21.15V-554q-35-11-70.74-16.5Q517.52-576 480-576t-73.26 5.5Q371-565 336-554v121.35q0 10.65-5.5 21.15Q325-401 316-394l-115 82q-17 12-34.5 8.5T139-317Zm125-211q-37 18-71.5 43T127-431l49 49 88-63v-83Zm432 0v83l88 63 49-49q-31-30-65-54.5T696-528Zm-432 0Zm432 0Z" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Devices selection panel positioned above controls -->
+        <div id="devicesList" class="hidden">
+            <div class="device-select">
+                <label for="audioSelect">Audio Input</label>
+                <select id="audioSelect"></select>
+            </div>
+            <div class="device-select">
+                <label for="videoSelect">Video Input</label>
+                <select id="videoSelect"></select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Participants Panel -->
+    <div id="participantsPanel" class="participants-panel hidden">
+        <div class="participants-header">
+            <h6>Participants</h6>
+            <span class="participants-count" id="participantsCount">0 users</span>
+        </div>
+        <div id="participantsList">
+            <!-- Participants will be dynamically added here -->
+        </div>
+    </div>
+
+    <!-- Toggle button for participants panel -->
+    <button id="toggleParticipantsBtn" class="toggle-participants-btn hidden" onclick="toggleParticipants()">
+        <i class="fas fa-users"></i>
+    </button>
+
+    <script src="/index.js"></script>
+    <script>
+        // inside public/index.html <script> tag
+        const urlParts = window.location.pathname.split('/');
+        const username = urlParts[1];
+        const roomId = urlParts[2];
+        const isTrainer = urlParts[3] || '0'; // Default to '0' if not provided
+
+        document.getElementById('nameInput').value = username;
+        document.getElementById('roomidInput').value = roomId;
+
+    </script>
+</body>
+
+</html>
