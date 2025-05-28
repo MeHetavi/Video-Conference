@@ -1296,4 +1296,24 @@ class RoomClient {
     // Move to that corner
     this.moveLocalVideoToCorner(position);
   }
+
+  // Add a method to restart ICE if needed
+  async restartIce(transport) {
+    try {
+      if (transport.connectionState === 'failed') {
+        console.log('Restarting ICE for transport', transport.id);
+
+        // Get new ICE parameters from the server
+        const { iceParameters } = await this.socket.request('restartIce', {
+          transportId: transport.id
+        });
+
+        // Restart ICE
+        await transport.restartIce({ iceParameters });
+        console.log('ICE restarted for transport', transport.id);
+      }
+    } catch (error) {
+      console.error('Error restarting ICE:', error);
+    }
+  }
 }

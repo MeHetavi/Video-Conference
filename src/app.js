@@ -371,6 +371,41 @@ io.on('connection', (socket) => {
       callback({ error: 'Failed to remove participant' });
     }
   })
+
+  socket.on('restartIce', async ({ transportId }, callback) => {
+    try {
+      if (!socket.room_id) {
+        return callback({ error: 'not in a room' });
+      }
+
+      const room = roomList.get(socket.room_id);
+      if (!room) {
+        return callback({ error: 'room not found' });
+      }
+
+      const peer = room.getPeers().get(socket.id);
+      if (!peer) {
+        return callback({ error: 'peer not found' });
+      }
+
+      // Find the transport
+      let transport;
+      if (peer.transports.has(transportId)) {
+        transport = peer.transports.get(transportId);
+      } else {
+        return callback({ error: 'transport not found' });
+      }
+
+      // Restart ICE
+      const iceParameters = await transport.restartIce();
+      callback({ iceParameters });
+
+      console.log(`ICE restarted for transport ${transportId} (peer: ${socket.id})`);
+    } catch (error) {
+      console.error('Error restarting ICE:', error);
+      callback({ error: error.message });
+    }
+  });
 })
 
 // TODO remove - never used?

@@ -105,4 +105,15 @@ module.exports = class Peer {
   removeConsumer(consumer_id) {
     this.consumers.delete(consumer_id)
   }
+
+  async restartIce(transport_id) {
+    if (!this.transports.has(transport_id)) {
+      throw new Error(`Transport ${transport_id} not found`);
+    }
+
+    const transport = this.transports.get(transport_id);
+    const iceParameters = await transport.restartIce();
+
+    return iceParameters;
+  }
 }
