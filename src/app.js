@@ -4,10 +4,10 @@ const app = express()
 const https = require('httpolyglot')
 const fs = require('fs')
 const mediasoup = require('mediasoup')
-const config = require('./config')
+const config = require('../../mediasoup-sfu-webrtc-video-rooms/src/config')
 const path = require('path')
-const Room = require('./Room')
-const Peer = require('./Peer')
+const Room = require('../../mediasoup-sfu-webrtc-video-rooms/src/Room')
+const Peer = require('../../mediasoup-sfu-webrtc-video-rooms/src/Peer')
 
 const options = {
   key: fs.readFileSync(path.join(__dirname, config.sslKey), 'utf-8'),
@@ -233,29 +233,32 @@ io.on('connection', (socket) => {
   })
 
   socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
 
-
-    if (!socket.room_id) return
+    if (!socket.room_id) return;
 
     // Get the room and remove the peer
-    const room = roomList.get(socket.room_id)
+    const room = roomList.get(socket.room_id);
     if (room) {
       try {
         // Check if the peer exists before removing
         if (room.getPeers().has(socket.id)) {
           // Get the peer's name before removing
           const peerName = room.getPeers().get(socket.id).name;
+          console.log(`Removing peer ${peerName} (${socket.id}) from room ${socket.room_id}`);
 
-          room.removePeer(socket.id)
+          room.removePeer(socket.id);
 
           // Notify other peers that this peer has left
-          socket.to(socket.room_id).emit('peerClosed', {
+          io.to(socket.room_id).emit('peerClosed', {
             peerId: socket.id,
             name: peerName
-          })
+          });
+
+          console.log(`Notified room ${socket.room_id} that peer ${peerName} has left`);
         }
       } catch (error) {
-        console.error('Error removing peer on disconnect:', error)
+        console.error('Error removing peer on disconnect:', error);
       }
     }
   })
@@ -279,23 +282,44 @@ io.on('connection', (socket) => {
   })
 
   socket.on('exitRoom', async (_, callback) => {
-
+    console.log('Client exiting room:', socket.id);
 
     if (!roomList.has(socket.room_id)) {
       callback({
         error: 'not currently in a room'
-      })
-      return
-    }
-    // close transports
-    await roomList.get(socket.room_id).removePeer(socket.id)
-    if (roomList.get(socket.room_id).getPeers().size === 0) {
-      roomList.delete(socket.room_id)
+      });
+      return;
     }
 
-    socket.room_id = null
+    const room = roomList.get(socket.room_id);
 
-    callback('successfully exited room')
+    // Get the peer's name before removing
+    let peerName = 'Unknown';
+    if (room.getPeers().has(socket.id)) {
+      peerName = room.getPeers().get(socket.id).name;
+    }
+
+    // Close transports
+    await room.removePeer(socket.id);
+
+    // Notify other peers that this peer has left
+    socket.to(socket.room_id).emit('peerClosed', {
+      peerId: socket.id,
+      name: peerName
+    });
+
+    console.log(`Notified room ${socket.room_id} that peer ${peerName} has left`);
+
+    // Check if room is empty and clean up if needed
+    if (room.getPeers().size === 0) {
+      console.log(`Room ${socket.room_id} is empty, removing it`);
+      roomList.delete(socket.room_id);
+    }
+
+    const oldRoomId = socket.room_id;
+    socket.room_id = null;
+
+    callback(`Successfully exited room ${oldRoomId}`);
   })
 
   socket.on('kickParticipant', async ({ peerId }, callback) => {

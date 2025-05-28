@@ -188,9 +188,24 @@ class RoomClient {
 
       // Update the UI with the new data
       this.updateParticipantsList();
+
+      // Debug participants info
+      this.debugParticipants();
     } catch (err) {
       console.error('Failed to fetch participants:', err);
     }
+  }
+
+  debugParticipants() {
+    // Check DOM elements
+    const participantsList = document.getElementById('participantsList');
+    const participantsCount = document.getElementById('participantsCount');
+
+    if (participantsList) {
+      console.log('DOM participant IDs:', Array.from(participantsList.children).map(el => el.dataset.peerId));
+    }
+
+    console.groupEnd();
   }
 
   updateParticipantsList() {
@@ -202,19 +217,31 @@ class RoomClient {
       return;
     }
 
+    // Clear the current list
     participantsList.innerHTML = '';
-    participantsCount.textContent = `${this.participants.length} users`;
+
+    // Ensure participants array exists
+    if (!this.participants) {
+      this.participants = [];
+      console.warn('Participants array was undefined, initialized to empty array');
+    }
+
+    // Update the count
+    if (participantsCount) {
+      participantsCount.textContent = `${this.participants.length} users`;
+    }
 
 
+    // Create participant items
     this.participants.forEach(participant => {
       // Check media status for this participant
       const hasAudio = this.hasProducer(participant.socketId, mediaType.audio);
       const hasVideo = this.hasProducer(participant.socketId, mediaType.video);
-      const isCurrentUser = participant.socketId === socket.id;
-
+      const isCurrentUser = participant.socketId === this.socket.id;
 
       const participantItem = document.createElement('div');
       participantItem.className = 'participant-item';
+      participantItem.dataset.peerId = participant.socketId;
 
       let participantHTML = `
         <div class="participant-info">
@@ -483,17 +510,31 @@ class RoomClient {
     this.socket.on(
       'peerClosed',
       function (data) {
-        console.log('Peer closed', data);
+        console.log('Peer closed event received:', data);
 
         // Store the name of the participant who left before updating the list
+        let leftParticipantName = 'Unknown';
         if (this.participants) {
           const leftParticipant = this.participants.find(p => p.socketId === data.peerId);
           if (leftParticipant && leftParticipant.name) {
-            data.name = leftParticipant.name;
+            leftParticipantName = leftParticipant.name;
+          } else if (data.name) {
+            leftParticipantName = data.name;
           }
         }
 
+        // Remove the participant from our local list immediately
+        if (this.participants) {
+          this.participants = this.participants.filter(p => p.socketId !== data.peerId);
+
+          // Update the UI with our local data first for immediate feedback
+          this.updateParticipantsList();
+        }
+
+        // Then fetch the latest participants list from the server to ensure consistency
         this.getParticipants();
+
+        console.log(`Participant ${leftParticipantName} (${data.peerId}) has left the room`);
       }.bind(this)
     )
 
