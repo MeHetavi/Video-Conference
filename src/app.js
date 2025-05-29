@@ -14,8 +14,6 @@ const options = {
   cert: fs.readFileSync(path.join(__dirname, config.sslCrt), 'utf-8')
 }
 
-const SocketLogger = require('./socket-logger');
-const WorkerLogger = require('./worker-logger');
 
 const LOG_PREFIX = '[MEDIA FLOW]';
 
@@ -80,10 +78,8 @@ async function createWorkers() {
 
     console.log(`${LOG_PREFIX} Worker ${i} created with PID: ${worker.pid}`);
 
-    WorkerLogger.logWorkerCreation(worker.appData.workerId || i, worker.pid);
 
     worker.on('died', () => {
-      WorkerLogger.logWorkerDied(worker.appData.workerId || i, worker.pid);
       console.error('mediasoup worker died, exiting in 2 seconds... [pid:%d]', worker.pid);
       setTimeout(() => process.exit(1), 2000);
     });
@@ -95,14 +91,9 @@ async function createWorkers() {
 }
 
 io.on('connection', (socket) => {
-  SocketLogger.logConnection(socket.id);
 
-  socket.on('disconnect', (reason) => {
-    SocketLogger.logDisconnection(socket.id, reason);
-  });
 
   socket.on('createRoom', async ({ room_id }, callback) => {
-    SocketLogger.logCreateRoom(socket.id, room_id);
     if (roomList.has(room_id)) {
       callback('already exists')
     } else {
@@ -136,7 +127,6 @@ io.on('connection', (socket) => {
 
 
   socket.on('join', ({ room_id, name, isTrainer }, cb) => {
-    SocketLogger.logJoinRoom(socket.id, room_id, name);
     if (!roomList.has(room_id)) {
       return cb({
         error: 'Room does not exist'

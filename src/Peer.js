@@ -3,7 +3,6 @@ const fs = require('fs')
 const path = require('path')
 
 // In Peer.js
-const PeerLogger = require('./peer-logger');
 const options = {
   key: fs.readFileSync(path.join(__dirname, config.sslKey), 'utf-8'),
   cert: fs.readFileSync(path.join(__dirname, config.sslCrt), 'utf-8')
@@ -17,12 +16,10 @@ module.exports = class Peer {
     this.consumers = new Map()
     this.producers = new Map()
 
-    PeerLogger.logPeerCreation(this.id, this.name);
   }
 
   addTransport(transport) {
     this.transports.set(transport.id, transport)
-    PeerLogger.logAddTransport(this.id, transport.id);
   }
 
   async connectTransport(transport_id, dtlsParameters) {
@@ -30,12 +27,10 @@ module.exports = class Peer {
       throw new Error(`Transport ${transport_id} not found`);
     }
 
-    PeerLogger.logConnectTransport(this.id, transport_id, dtlsParameters);
     await this.transports.get(transport_id).connect({ dtlsParameters });
   }
 
   async createProducer(producerTransportId, rtpParameters, kind) {
-    PeerLogger.logCreateProducer(this.id, producerTransportId, kind);
 
     //TODO handle null errors
     let producer = await this.transports.get(producerTransportId).produce({
@@ -44,7 +39,6 @@ module.exports = class Peer {
     })
 
     this.producers.set(producer.id, producer)
-    PeerLogger.logProducerCreated(this.id, producer.id, kind);
 
     producer.on(
       'transportclose',

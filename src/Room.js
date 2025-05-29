@@ -1,7 +1,6 @@
 const config = require('./config')
 
 // In Room.js
-const RoomLogger = require('./room-logger');
 
 module.exports = class Room {
   constructor(room_id, worker, io) {
@@ -17,16 +16,13 @@ module.exports = class Room {
   async _setupRouter() {
     try {
       this.router = await this.worker.createRouter({ mediaCodecs: config.mediasoup.router.mediaCodecs });
-      RoomLogger.logRoomCreation(this.id, this.router);
     } catch (error) {
-      RoomLogger.logError('_setupRouter', error);
       throw error;
     }
   }
 
   addPeer(peer) {
     this.peers.set(peer.id, peer);
-    RoomLogger.logPeerJoin(this.id, peer.id, peer.name);
   }
 
   getProducerListForPeer() {

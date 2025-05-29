@@ -3,7 +3,7 @@
 # Simple script to monitor media flow logs
 
 LOG_FILE="app.log"
-GREP_PATTERN="MEDIA FLOW"
+GREP_PATTERN="MEDIA FLOW.*Error|MEDIA FLOW.*error|MEDIA FLOW.*died"
 
 # Check if log file exists
 if [ ! -f "$LOG_FILE" ]; then
@@ -12,9 +12,6 @@ if [ ! -f "$LOG_FILE" ]; then
   sleep 2
 fi
 
-# Test log entry to verify logging is working
-echo "[MEDIA FLOW] Log monitoring started at $(date)" >> $LOG_FILE
-
 # Function to display colored logs
 display_logs() {
   tail -f $LOG_FILE | grep --color=always -E "$GREP_PATTERN|$"
@@ -22,11 +19,12 @@ display_logs() {
 
 # Display header
 echo "=============================================="
-echo "  Media Flow Monitor"
+echo "  Media Flow Error Monitor"
 echo "=============================================="
-echo "Monitoring $LOG_FILE for media flow events..."
+echo "Monitoring $LOG_FILE for media flow errors..."
 echo "Press Ctrl+C to exit"
 echo "=============================================="
 
 # Start monitoring
 display_logs
+
