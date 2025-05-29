@@ -14,6 +14,11 @@ const options = {
   cert: fs.readFileSync(path.join(__dirname, config.sslCrt), 'utf-8')
 }
 
+const SocketLogger = require('./socket-logger');
+const WorkerLogger = require('./worker-logger');
+
+const LOG_PREFIX = '[MEDIA FLOW]';
+
 const httpsServer = https.createServer(options, app)
 const io = require('socket.io')(httpsServer)
 
@@ -61,7 +66,9 @@ let roomList = new Map()
   })()
 
 async function createWorkers() {
-  let { numWorkers } = config.mediasoup
+  console.log(`${LOG_PREFIX} Creating ${config.mediasoup.numWorkers} mediasoup workers`);
+
+  let { numWorkers } = config.mediasoup;
 
   for (let i = 0; i < numWorkers; i++) {
     let worker = await mediasoup.createWorker({
@@ -69,25 +76,33 @@ async function createWorkers() {
       logTags: config.mediasoup.worker.logTags,
       rtcMinPort: config.mediasoup.worker.rtcMinPort,
       rtcMaxPort: config.mediasoup.worker.rtcMaxPort
-    })
+    });
+
+    console.log(`${LOG_PREFIX} Worker ${i} created with PID: ${worker.pid}`);
+
+    WorkerLogger.logWorkerCreation(worker.appData.workerId || i, worker.pid);
 
     worker.on('died', () => {
-      console.error('mediasoup worker died, exiting in 2 seconds... [pid:%d]', worker.pid)
-      setTimeout(() => process.exit(1), 2000)
-    })
-    workers.push(worker)
+      WorkerLogger.logWorkerDied(worker.appData.workerId || i, worker.pid);
+      console.error('mediasoup worker died, exiting in 2 seconds... [pid:%d]', worker.pid);
+      setTimeout(() => process.exit(1), 2000);
+    });
 
-    // log worker resource usage
-    /*setInterval(async () => {
-            const usage = await worker.getResourceUsage();
-
-            console.info('mediasoup Worker resource usage [pid:%d]: %o', worker.pid, usage);
-        }, 120000);*/
+    workers.push(worker);
   }
+
+  console.log(`${LOG_PREFIX} All workers created successfully`);
 }
 
 io.on('connection', (socket) => {
+  SocketLogger.logConnection(socket.id);
+
+  socket.on('disconnect', (reason) => {
+    SocketLogger.logDisconnection(socket.id, reason);
+  });
+
   socket.on('createRoom', async ({ room_id }, callback) => {
+    SocketLogger.logCreateRoom(socket.id, room_id);
     if (roomList.has(room_id)) {
       callback('already exists')
     } else {
@@ -121,8 +136,7 @@ io.on('connection', (socket) => {
 
 
   socket.on('join', ({ room_id, name, isTrainer }, cb) => {
-
-
+    SocketLogger.logJoinRoom(socket.id, room_id, name);
     if (!roomList.has(room_id)) {
       return cb({
         error: 'Room does not exist'

@@ -14,4 +14,4 @@ cd Video-Conference
 npm install
 
 # Start the application with the external IP
-EXTERNAL_IP=$EXTERNAL_IP node src/app.js
+t_IP=$EXTERNAL_IP node src/app.js
