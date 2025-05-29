@@ -9,8 +9,8 @@ curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
 apt-get install -y nodejs
 
 # Clone your repository (or use GCS bucket copy or other deploy strategy)
-git clone https://github.com/your-username/your-mediasoup-repo.git /opt/mediasoup-app
-cd /opt/mediasoup-app
+git clone https://github.com/MeHetavi/Video_Conference.git 
+cd /Video_Conference
 
 # Install dependencies
 npm install

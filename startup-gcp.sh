@@ -8,7 +8,7 @@ export EXTERNAL_IP=$EXTERNAL_IP
 echo "External IP: $EXTERNAL_IP"
 
 # Navigate to the application directory
-cd /path/to/your/Video-Conference
+cd Video-Conference
 
 # Install dependencies if needed
 npm install
