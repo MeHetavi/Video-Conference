@@ -262,7 +262,7 @@ function updateScoreCanvasSize() {
 
     // Calculate size based on container dimensions
     const baseSize = Math.min(containerWidth, containerHeight);
-    const scoreSize = Math.max(80, Math.min(120, baseSize * 0.4)); // 40% of container size, min 80px, max 120px
+    const scoreSize = Math.max(80, Math.min(120, baseSize * 0.6)); // 40% of container size, min 80px, max 120px
 
     // Update canvas size
     scoreCanvas.width = scoreSize;
