@@ -803,18 +803,19 @@ class RoomClient {
       }.bind(this)
     )
 
-    // Add socket event listener for displaying captured images
+    // Add listener for receiving captured images
     this.socket.on('displayCapturedImage', ({ imageData, timestamp, capturedBy }) => {
-      this.displayCapturedImage(imageData, timestamp, capturedBy)
-    })
+      console.log('Received captured image from:', capturedBy);
+      this.displayCapturedImage(imageData, timestamp, capturedBy);
+    });
 
-    // Add socket event listener for loading captured images when joining
+    // Add listener for loading captured images when joining a room
     this.socket.on('loadCapturedImages', (images) => {
-      // Display each captured image
+      console.log('Loading captured images:', images.length);
       images.forEach(({ imageData, timestamp, capturedBy }) => {
-        this.displayCapturedImage(imageData, timestamp, capturedBy)
-      })
-    })
+        this.displayCapturedImage(imageData, timestamp, capturedBy);
+      });
+    });
   }
 
   //////// MAIN FUNCTIONS /////////////

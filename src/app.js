@@ -439,19 +439,24 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Update the captureAndBroadcastImage event handler
+  // Add handler for capturing and broadcasting images
   socket.on('captureAndBroadcastImage', ({ imageData, timestamp }) => {
+    console.log(`${LOG_PREFIX} Received image capture broadcast request from:`, socket.id);
+
     if (!socket.room_id) {
+      console.warn(`${LOG_PREFIX} No room_id found for socket ${socket.id}`);
       return;
     }
 
     const room = roomList.get(socket.room_id);
     if (!room) {
+      console.warn(`${LOG_PREFIX} Room not found:`, socket.room_id);
       return;
     }
 
     // Store the captured image in the room's image list
     if (!roomCapturedImages.has(socket.room_id)) {
+      console.log(`${LOG_PREFIX} Creating new captured images array for room:`, socket.room_id);
       roomCapturedImages.set(socket.room_id, []);
     }
 
@@ -468,11 +473,14 @@ io.on('connection', (socket) => {
     }
 
     // Broadcast the captured image to all peers in the room
+    console.log(`${LOG_PREFIX} Broadcasting image to room:`, socket.room_id);
     socket.to(socket.room_id).emit('displayCapturedImage', {
       imageData,
       timestamp,
       capturedBy: socket.id
     });
+
+    console.log(`${LOG_PREFIX} Image broadcast completed for room:`, socket.room_id);
   });
 })
 
