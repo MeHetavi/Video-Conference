@@ -2,12 +2,10 @@ urlParts = window.location.pathname.split('/');
 isTrainer = urlParts[3] || '0';
 
 // Initialize socket with query parameters
-const socket = io({
-  query: {
-    isTrainer: isTrainer
-  }
+const socket = io('wss://connect.ycp.life', {
+  query: { isTrainer: isTrainer },
+  transports: ['websocket']
 });
-
 let producer = null
 
 // nameInput.value = 'user_' + Math.round(Math.random() * 1000)
@@ -71,8 +69,6 @@ function roomOpen() {
   hide(stopAudioButton)
   reveal(startVideoButton)
   hide(stopVideoButton)
-  // reveal(startScreenButton)
-  // hide(stopScreenButton)
   reveal(exitButton)
   reveal(devicesButton)
   reveal(participantsButton)
