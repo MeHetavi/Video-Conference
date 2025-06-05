@@ -317,43 +317,17 @@
                 query: {
                     isTrainer: isTrainer ? 'true' : 'false',
                     roomId: roomId
-                },
-                transports: ['websocket', 'polling'],
-                upgrade: true,
-                rememberUpgrade: true,
-                path: '/socket.io/',
-                reconnection: true,
-                reconnectionAttempts: 5,
-                reconnectionDelay: 1000,
-                reconnectionDelayMax: 5000,
-                timeout: 20000,
-                autoConnect: true,
-                forceNew: true
+                }
             });
 
             // Set room_id on socket
             window.socket.room_id = roomId;
 
             // Log socket connection status
-            window.socket.on('connect', () => {
-                console.log('Socket connected successfully');
-            });
+            window.socket.on('connect', () => { });
 
             window.socket.on('connect_error', (error) => {
                 console.error('Socket connection error:', error);
-                // Attempt to reconnect with different transport if websocket fails
-                if (window.socket.io.opts.transports[0] === 'websocket') {
-                    console.log('Falling back to polling transport');
-                    window.socket.io.opts.transports = ['polling', 'websocket'];
-                }
-            });
-
-            window.socket.on('reconnect_attempt', (attemptNumber) => {
-                console.log('Reconnection attempt:', attemptNumber);
-            });
-
-            window.socket.on('reconnect_failed', () => {
-                console.error('Failed to reconnect socket');
             });
 
         });
