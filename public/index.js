@@ -222,17 +222,11 @@ function showNotification(message, type = 'info', duration = 5000) {
 
   notification.innerHTML = `
     <div class="notification-content">
-      ${icon ? `<span class="notification-icon">${icon}</span>` : ''}
-      <span class="notification-message">${message}</span>
+      
+      <span class="notification-message">${icon && icon}${message}</span>
     </div>
-    <button class="close-btn">&times;</button>
   `;
 
-  // Add close button functionality
-  const closeBtn = notification.querySelector('.close-btn');
-  closeBtn.addEventListener('click', () => {
-    notification.remove();
-  });
 
   // Add to container
   container.appendChild(notification);
@@ -251,11 +245,11 @@ function showNotification(message, type = 'info', duration = 5000) {
 
 // Add specific functions for join/leave notifications
 function showJoinNotification(username) {
-  showNotification(`${username} has joined the meeting`, 'join', 5000);
+  showNotification(`${username} has joined the session.`, 'join', 8000);
 }
 
 function showLeaveNotification(username) {
-  showNotification(`${username} has left the meeting`, 'leave', 5000);
+  showNotification(`${username} has left the session.`, 'leave', 8000);
 }
 
 // Update the hide and reveal functions to handle these elements
