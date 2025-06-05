@@ -43,7 +43,6 @@
 
         // Wait for TensorFlow.js to be ready
         window.tf.ready().then(() => {
-            console.log('TensorFlow.js is ready');
         }).catch(error => {
             console.error('Error initializing TensorFlow.js:', error);
         });
@@ -226,8 +225,6 @@
                 const pathname = window.location.pathname;
                 const urlParts = pathname.split('/').filter(part => part !== ''); // Remove empty parts
 
-                console.log('Full pathname:', pathname);
-                console.log('URL parts:', urlParts);
 
                 // Extract parameters based on URL structure
                 // Assuming URL structure: /username/roomId/isTrainer or /username/roomId
@@ -252,9 +249,6 @@
                 if (!roomId && urlParams.has('roomId')) {
                     roomId = urlParams.get('roomId');
                 }
-
-                console.log('Parsed parameters:', { username, roomId, isTrainer });
-
             } catch (error) {
                 console.error('Error parsing URL parameters:', error);
             }
@@ -274,7 +268,6 @@
                     roomidInput.value = roomId;
                 }
 
-                console.log('Form fields populated successfully');
 
             } catch (error) {
                 console.error('Error populating form fields:', error);
@@ -284,7 +277,6 @@
         // Function to handle trainer-specific functionality
         function handleTrainerRole() {
             if (isTrainer) {
-                console.log('User is a trainer - enabling trainer features');
                 // Add trainer-specific functionality here
                 document.body.classList.add('trainer-mode');
 
@@ -294,14 +286,12 @@
                 // - Enable special permissions
                 // - Modify the interface
             } else {
-                console.log('User is a regular participant');
                 document.body.classList.add('participant-mode');
             }
         }
 
         // Initialize everything when DOM is loaded
         document.addEventListener('DOMContentLoaded', function () {
-            console.log('DOM Content Loaded - Initializing...');
 
             // Parse URL parameters
             parseUrlParameters();
@@ -331,19 +321,12 @@
             window.socket.room_id = roomId;
 
             // Log socket connection status
-            window.socket.on('connect', () => {
-                console.log('Socket connected:', {
-                    id: window.socket.id,
-                    roomId: roomId,
-                    isTrainer: isTrainer
-                });
-            });
+            window.socket.on('connect', () => { });
 
             window.socket.on('connect_error', (error) => {
                 console.error('Socket connection error:', error);
             });
 
-            console.log('Initialization complete:', window.roomConfig);
         });
 
         // Utility function to get current room configuration
@@ -362,7 +345,6 @@
     <script>
         // Add pose detection button handler
         document.addEventListener('DOMContentLoaded', function () {
-            console.log('Setting up pose detection button...');
             const poseButton = document.getElementById('poseDetectionButton');
             const modeSelect = document.getElementById('poseDetectionMode');
 
@@ -399,9 +381,7 @@
             updateCapturedModeAvailability();
 
             if (poseButton) {
-                console.log('Pose detection button found');
                 poseButton.addEventListener('click', async function () {
-                    console.log('Pose detection button clicked');
 
                     // Wait for local video element to be available
                     const waitForVideo = () => {
@@ -409,12 +389,9 @@
                             const checkVideo = () => {
                                 // Look for the local video element in the remoteVideos container
                                 const video = document.querySelector('#remoteVideos .video-container[id^="container-local-"] video');
-                                console.log('Checking for local video element:', video);
                                 if (video && video.readyState >= 2) { // HAVE_CURRENT_DATA
-                                    console.log('Local video element found and ready');
                                     resolve(video);
                                 } else {
-                                    console.log('Local video not ready, retrying...');
                                     setTimeout(checkVideo, 100);
                                 }
                             };
@@ -423,7 +400,6 @@
                     };
 
                     try {
-                        console.log('Waiting for local video element...');
                         const video = await waitForVideo();
                         if (!video) {
                             console.error('No local video element found');
@@ -432,7 +408,6 @@
 
                         // Find the local video container
                         const container = video.closest('.video-container');
-                        console.log('Local video container:', container);
 
                         if (!container) {
                             console.error('No container found for video');
@@ -440,14 +415,11 @@
                         }
 
                         const isActive = this.classList.contains('active');
-                        console.log('Button active state:', isActive);
 
                         if (!isActive) {
                             try {
-                                console.log('Starting pose detection...');
                                 // Start pose detection
                                 const success = await window.poseDetection.initializePoseDetection(video, container);
-                                console.log('Pose detection initialization result:', success);
 
                                 if (success) {
                                     this.classList.add('active');
@@ -458,7 +430,6 @@
                                         modeSelect.classList.remove('hidden');
                                         updateCapturedModeAvailability();
                                     }
-                                    console.log('Pose detection started successfully');
                                 } else {
                                     console.error('Failed to initialize pose detection');
                                 }
@@ -466,7 +437,6 @@
                                 console.error('Error starting pose detection:', error);
                             }
                         } else {
-                            console.log('Stopping pose detection...');
                             // Stop pose detection
                             window.poseDetection.stopDetection();
                             this.classList.remove('active');
@@ -476,7 +446,6 @@
                             if (modeSelect) {
                                 modeSelect.classList.add('hidden');
                             }
-                            console.log('Pose detection stopped');
                         }
                     } catch (error) {
                         console.error('Error waiting for video:', error);

@@ -67,7 +67,6 @@ module.exports = class Room {
     )
 
     transport.on('close', () => {
-      console.log('Transport close', { name: this.peers.get(socket_id).name })
     })
 
     this.peers.get(socket_id).addTransport(transport)

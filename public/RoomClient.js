@@ -414,9 +414,6 @@ class RoomClient {
     const participantsList = document.getElementById('participantsList');
     const participantsCount = document.getElementById('participantsCount');
 
-    if (participantsList) {
-      console.log('DOM participant IDs:', Array.from(participantsList.children).map(el => el.dataset.peerId));
-    }
 
     console.groupEnd();
   }
@@ -616,22 +613,17 @@ class RoomClient {
         async function (state) {
           switch (state) {
             case 'connecting':
-              console.log('Producer transport connecting...');
               break;
             case 'connected':
-              console.log('Producer transport connected');
               this.transportRetryCount = 0; // Reset retry count on successful connection
               break;
             case 'failed':
-              console.log('Producer transport failed');
               await this.handleTransportFailure();
               break;
             case 'disconnected':
-              console.log('Producer transport disconnected');
               await this.handleTransportFailure();
               break;
             case 'closed':
-              console.log('Producer transport closed');
               await this.handleTransportFailure();
               break;
             default:
@@ -695,7 +687,6 @@ class RoomClient {
     this.socket.on(
       'consumerClosed',
       function ({ consumer_id }) {
-        console.log('Closing consumer:', consumer_id)
         this.removeConsumer(consumer_id)
       }.bind(this)
     )
@@ -709,7 +700,6 @@ class RoomClient {
     this.socket.on(
       'newProducers',
       async function (data) {
-        console.log('New producers', data);
 
         // Make sure device is initialized before consuming
         if (!this.device || !this.device.rtpCapabilities) {
@@ -733,7 +723,6 @@ class RoomClient {
     this.socket.on(
       'peerClosed',
       function (data) {
-        console.log('Peer closed event received:', data);
 
         // Store the name of the participant who left before updating the list
         let leftParticipantName = 'Unknown';
@@ -757,7 +746,6 @@ class RoomClient {
         // Then fetch the latest participants list from the server to ensure consistency
         this.getParticipants();
 
-        console.log(`Participant ${leftParticipantName} (${data.peerId}) has left the room`);
       }.bind(this)
     )
 
@@ -772,7 +760,6 @@ class RoomClient {
     this.socket.on(
       'newPeer',
       function (data) {
-        console.log('New peer joined:', data)
         // Refresh the participants list
         this.getParticipants()
       }.bind(this)
@@ -782,7 +769,6 @@ class RoomClient {
     this.socket.on(
       'producerStateChanged',
       function (data) {
-        console.log('Producer state changed:', data)
         if (data.state == 'closed') {
           document.getElementById('poseDetectionButton').classList.add('hidden')
         }
@@ -805,13 +791,11 @@ class RoomClient {
 
     // Add listener for receiving captured images
     this.socket.on('displayCapturedImage', ({ imageData, timestamp, capturedBy }) => {
-      console.log('Received captured image from:', capturedBy);
       this.displayCapturedImage(imageData, timestamp, capturedBy);
     });
 
     // Add listener for loading captured images when joining a room
     this.socket.on('loadCapturedImages', (images) => {
-      console.log('Loading captured images:', images.length);
       images.forEach(({ imageData, timestamp, capturedBy }) => {
         this.displayCapturedImage(imageData, timestamp, capturedBy);
       });
@@ -863,16 +847,14 @@ class RoomClient {
         return
       }
       if (this.producerLabel.has(type)) {
-        console.log('Producer already exists for this type ' + type)
         return
       }
-      console.log('Mediacontraints:', mediaConstraints)
       let stream
       try {
         stream = screen
           ? await navigator.mediaDevices.getDisplayMedia()
           : await navigator.mediaDevices.getUserMedia(mediaConstraints)
-        console.log(navigator.mediaDevices.getSupportedConstraints())
+        navigator.mediaDevices.getSupportedConstraints()
 
         const track = audio ? stream.getAudioTracks()[0] : stream.getVideoTracks()[0]
         const params = {
@@ -911,7 +893,6 @@ class RoomClient {
           }
         })
 
-        console.log('Producer created successfully:', producer.id)
 
         this.producers.set(producer.id, producer)
 
@@ -931,7 +912,6 @@ class RoomClient {
         })
 
         producer.on('transportclose', () => {
-          console.log('Producer transport close')
           if (!audio) {
             stream.getTracks().forEach(function (track) {
               track.stop()
@@ -942,7 +922,6 @@ class RoomClient {
         })
 
         producer.on('close', () => {
-          console.log('Closing producer')
           if (!audio) {
             stream.getTracks().forEach(function (track) {
               track.stop()
@@ -971,11 +950,9 @@ class RoomClient {
 
         this.getParticipants()
       } catch (err) {
-        console.error('Error in produce:', err)
         throw err
       }
     } catch (err) {
-      console.error('Produce error:', err)
       // Attempt to recover if it's a transport-related error
       if (err.message && err.message.includes('transport')) {
         await this.handleTransportFailure();
@@ -1124,12 +1101,6 @@ class RoomClient {
       const stream = new MediaStream();
       stream.addTrack(consumer.track);
 
-      console.log(`Created consumer for producer ${producerId}:`, {
-        id: consumer.id,
-        kind: consumer.kind,
-        producerSocketId,
-        mediaType: mediaTypeValue
-      });
 
       return {
         consumer,
@@ -1148,12 +1119,10 @@ class RoomClient {
 
   closeProducer(type) {
     if (!this.producerLabel.has(type)) {
-      console.log('There is no producer for this type ' + type)
       return
     }
 
     let producer_id = this.producerLabel.get(type)
-    console.log('Close producer', producer_id)
 
     this.socket.emit('producerClosed', {
       producer_id
@@ -1201,7 +1170,6 @@ class RoomClient {
 
   pauseProducer(type) {
     if (!this.producerLabel.has(type)) {
-      console.log('There is no producer for this type ' + type)
       return
     }
 
@@ -1211,7 +1179,6 @@ class RoomClient {
 
   resumeProducer(type) {
     if (!this.producerLabel.has(type)) {
-      console.log('There is no producer for this type ' + type)
       return
     }
 
@@ -1246,6 +1213,7 @@ class RoomClient {
 
   exit(offline = false) {
     try {
+      window.location.reload();
       // Close all producers
       this.producers.forEach((producer) => {
         producer.close();
@@ -1335,7 +1303,6 @@ class RoomClient {
       }
 
       // Refresh the window
-      window.location.reload();
     } catch (error) {
       console.error('Error during exit:', error);
     }
@@ -1381,7 +1348,6 @@ class RoomClient {
     tmpInput.select()
     document.execCommand('copy')
     document.body.removeChild(tmpInput)
-    console.log('URL copied to clipboard 👍')
   }
 
   showDevices() {
@@ -1611,7 +1577,6 @@ class RoomClient {
   async restartIce(transport) {
     try {
       if (transport.connectionState === 'failed') {
-        console.log('Restarting ICE for transport', transport.id);
 
         // Get new ICE parameters from the server
         const { iceParameters } = await this.socket.request('restartIce', {
@@ -1620,7 +1585,6 @@ class RoomClient {
 
         // Restart ICE
         await transport.restartIce({ iceParameters });
-        console.log('ICE restarted for transport', transport.id);
       }
     } catch (error) {
       console.error('Error restarting ICE:', error);
@@ -1628,7 +1592,6 @@ class RoomClient {
   }
 
   async recreateProducerTransport() {
-    console.log('Handling transport failure...');
 
     // Increment retry count
     this.transportRetryCount = (this.transportRetryCount || 0) + 1;
@@ -1637,7 +1600,6 @@ class RoomClient {
     const maxRetries = 3;
 
     if (this.transportRetryCount <= maxRetries) {
-      console.log(`Attempting to recreate transport (attempt ${this.transportRetryCount}/${maxRetries})...`);
 
       try {
         // Close existing transport
@@ -1691,7 +1653,6 @@ class RoomClient {
           }
         }
 
-        console.log('Transport recreated successfully');
         return true;
       } catch (error) {
         console.error('Failed to recreate transport:', error);
@@ -1705,7 +1666,6 @@ class RoomClient {
   }
 
   async handleTransportFailure() {
-    console.log('Handling transport failure...');
 
     // Increment retry count
     this.transportRetryCount = (this.transportRetryCount || 0) + 1;
@@ -1714,7 +1674,6 @@ class RoomClient {
     const maxRetries = 3;
 
     if (this.transportRetryCount <= maxRetries) {
-      console.log(`Attempting to recreate transport (attempt ${this.transportRetryCount}/${maxRetries})...`);
 
       try {
         // Close existing transport
@@ -1768,7 +1727,6 @@ class RoomClient {
           }
         }
 
-        console.log('Transport recreated successfully');
         return true;
       } catch (error) {
         console.error('Failed to recreate transport:', error);
@@ -1952,7 +1910,6 @@ class RoomClient {
 
           // Initialize detector if not already initialized
           if (!window.poseDetection.detector) {
-            console.log('Initializing pose detector for captured image...');
             try {
               // Create detector using TensorFlow.js pose detection
               const detectorConfig = {
@@ -1964,7 +1921,6 @@ class RoomClient {
                 poseDetection.SupportedModels.MoveNet,
                 detectorConfig
               );
-              console.log('Pose detector initialized successfully');
             } catch (error) {
               console.error('Error initializing pose detector:', error);
               throw error;
@@ -1980,11 +1936,7 @@ class RoomClient {
             if (poseData.keypoints && poseData.keypoints.length > 0) {
               // Store pose data with the image
               if (window.poseDetection.storePoseDataWithImage) {
-                window.poseDetection.storePoseDataWithImage(img, poseData);
-                console.log('Stored pose data with image:', {
-                  keypoints: poseData.keypoints.length,
-                  score: poseData.score
-                });
+                window.poseDetection.storePoseDataWithImage(img, poseData)
               }
 
               // Update latest captured pose
@@ -2079,7 +2031,6 @@ class RoomClient {
     if (poseDetectionMode) {
       poseDetectionMode.addEventListener('change', (e) => {
         this.poseComparisonMode = e.target.value;
-        console.log('Pose comparison mode changed to:', this.poseComparisonMode);
 
         // Update pose detection when mode changes
         if (this.poseDetectionActive) {

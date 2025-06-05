@@ -16,7 +16,6 @@
     // Log room joining
     const originalJoin = instance.join;
     instance.join = function () {
-      console.log(`${LOG_PREFIX} Joining room: ${instance.room_id} as ${instance.name}`);
       return originalJoin.apply(this, arguments);
     };
 

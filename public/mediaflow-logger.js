@@ -62,7 +62,4 @@
         throw err;
       });
   };
-
-  console.log(`${LOG_PREFIX} Media flow logger initialized`);
 })();
-

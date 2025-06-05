@@ -1,8 +1,4 @@
 // Use global TensorFlow.js and pose detection objects
-console.log('Initializing pose detection module...');
-console.log('TensorFlow.js available:', !!window.tf);
-console.log('Pose detection available:', !!window.poseDetection);
-
 const tf = window.tf;
 const poseDetection = window.poseDetection;
 
@@ -53,10 +49,6 @@ const connections = [
 // Initialize pose detection
 async function initializePoseDetection(video, container) {
     try {
-        console.log('Initializing pose detection...');
-        console.log('Video element:', video);
-        console.log('Container element:', container);
-        console.log('Is trainer:', isTrainer);
 
         // Check if TensorFlow.js is loaded
         if (!window.tf) {
@@ -80,23 +72,18 @@ async function initializePoseDetection(video, container) {
         if (modeSelect) {
             modeSelect.addEventListener('change', (e) => {
                 currentMode = e.target.value;
-                console.log('Pose detection mode changed to:', currentMode);
-                if (currentMode === 'captured') {
-                    console.log('Captured mode selected');
-                }
+
             });
         }
 
         // Wait for video to be ready
         if (video.readyState < 2) {
-            console.log('Waiting for video to be ready...');
             await new Promise((resolve) => {
                 video.addEventListener('loadeddata', resolve, { once: true });
             });
         }
 
         videoElement = video;
-        console.log('Video element set:', !!videoElement);
 
         // Find trainer video element with specific selectors for your structure
         const trainerVideoSelectors = [
@@ -112,11 +99,9 @@ async function initializePoseDetection(video, container) {
             const trainerVideo = document.querySelector(selector);
             if (trainerVideo && trainerVideo !== video) {
                 trainerVideoElement = trainerVideo;
-                console.log('Trainer video element found with selector:', selector);
 
                 // Wait for trainer video to be ready as well
                 if (trainerVideo.readyState < 2) {
-                    console.log('Waiting for trainer video to be ready...');
                     await new Promise((resolve) => {
                         trainerVideo.addEventListener('loadeddata', resolve, { once: true });
                         // Add timeout to avoid hanging
@@ -130,14 +115,12 @@ async function initializePoseDetection(video, container) {
         // Also check if current video is the trainer based on container class
         if (!trainerVideoElement && video.closest('.trainer-video')) {
             isTrainer = true;
-            console.log('Current video is trainer video based on container class');
         }
 
         // Also check for trainer badge to identify trainer
         const trainerBadge = container.querySelector('.video-trainer-badge');
         if (trainerBadge && trainerBadge.textContent.toLowerCase().includes('trainer')) {
             isTrainer = true;
-            console.log('Detected trainer role from trainer badge');
         }
 
         if (!trainerVideoElement && !isTrainer) {
@@ -147,7 +130,6 @@ async function initializePoseDetection(video, container) {
         // Create canvas for pose overlay
         canvas = document.createElement('canvas');
         canvas.className = 'pose-canvas';
-        console.log('Created pose canvas');
 
         // Create score canvas only for non-trainers
         if (isTrainer == false) {
@@ -178,8 +160,6 @@ async function initializePoseDetection(video, container) {
                 }
             });
             resizeObserver.observe(container);
-
-            console.log('Created score canvas');
         }
 
         // Position canvas absolutely over the video
@@ -193,31 +173,25 @@ async function initializePoseDetection(video, container) {
 
         container.appendChild(canvas);
         ctx = canvas.getContext('2d');
-        console.log('Canvas context created');
 
         // Load TensorFlow.js and PoseNet
-        console.log('Loading TensorFlow.js...');
         try {
             await tf.ready();
-            console.log('TensorFlow.js loaded successfully');
         } catch (error) {
             throw new Error('Failed to initialize TensorFlow.js: ' + error.message);
         }
 
-        console.log('Creating pose detector...');
         try {
             detector = await poseDetection.createDetector(
                 poseDetection.SupportedModels.MoveNet,
                 config
             );
-            console.log('Pose detector created successfully');
         } catch (error) {
             throw new Error('Failed to create pose detector: ' + error.message);
         }
 
         // Initialize canvas size
         updateCanvasSize();
-        console.log('Canvas size updated');
 
         // Add resize listener to update canvas size
         resizeListener = updateCanvasSize;
@@ -225,7 +199,6 @@ async function initializePoseDetection(video, container) {
 
         isDetecting = true;
         detectPose();
-        console.log('Pose detection started');
 
         return true;
     } catch (error) {
@@ -240,7 +213,6 @@ async function initializePoseDetection(video, container) {
 // Update canvas size to match video dimensions
 function updateCanvasSize() {
     if (!canvas || !videoElement) {
-        console.log('Cannot update canvas size: canvas or video not available');
         return;
     }
 
@@ -278,7 +250,6 @@ function updateCanvasSize() {
     canvas.offsetX = offsetX;
     canvas.offsetY = offsetY;
 
-    console.log('Canvas size updated:', { scaleX, scaleY, offsetX, offsetY });
 }
 
 // Update score canvas size based on container size
@@ -310,7 +281,6 @@ function updateScoreCanvasSize() {
 // Start pose detection
 function startDetection() {
     if (!isDetecting) {
-        console.log('Starting pose detection...');
         isDetecting = true;
         detectPose();
     }
@@ -318,7 +288,6 @@ function startDetection() {
 
 // Stop pose detection
 function stopDetection() {
-    console.log('Stopping pose detection...');
     isDetecting = false;
 
     // Cancel animation frame
@@ -364,7 +333,6 @@ function stopDetection() {
     trainerVideoElement = null;
     detector = null;
 
-    console.log('Pose detection stopped and cleaned up');
 }
 
 // Normalize pose coordinates using improved method based on TensorFlow Move Mirror
@@ -836,7 +804,6 @@ function drawAngleDebugInfo(keypoints, type = 'user') {
 
 // Main pose detection loop
 async function detectPose() {
-    // console.log(isDetecting, detector, videoElement, ctx)
     if (!isDetecting || !detector || !videoElement || !ctx) {
         return;
     }
@@ -860,14 +827,12 @@ async function detectPose() {
                 // If this is the trainer, draw their skeleton in white
                 if (localPose) {
                     drawSkeleton(localPose.keypoints, 'trainer');
-                    // console.log('Drawing trainer skeleton on trainer video');
                 }
             } else {
                 // If this is a participant
                 if (localPose) {
                     // Draw participant's skeleton in green on their video
                     drawSkeleton(localPose.keypoints, 'user');
-                    // console.log('Drawing participant skeleton on local video');
 
                     // Handle different modes
                     if (currentMode === 'live') {
@@ -878,11 +843,7 @@ async function detectPose() {
                             trainerVideoElement.videoWidth > 0 &&
                             trainerVideoElement.videoHeight > 0) {
                             try {
-                                console.log('Comparing with trainer video:', {
-                                    videoId: trainerVideoElement.id,
-                                    videoSrc: trainerVideoElement.src,
-                                    containerId: trainerVideoElement.closest('.video-container')?.id
-                                });
+
 
                                 const trainerPoses = await detector.estimatePoses(trainerVideoElement);
                                 trainerPoseData = trainerPoses.length > 0 ? trainerPoses[0] : null;
@@ -890,26 +851,16 @@ async function detectPose() {
                                 if (trainerPoseData) {
                                     // Calculate and display similarity score
                                     const similarity = calculateConfidenceWeightedScore(localPose, trainerPoseData);
-                                    console.log('Pose similarity with trainer video:', {
-                                        similarity: similarity.toFixed(2),
-                                        trainerVideoId: trainerVideoElement.id,
-                                        localVideoId: videoElement.id
-                                    });
+
                                     updateScore(similarity);
                                 } else {
-                                    // console.log('No trainer pose detected in video:', trainerVideoElement.id);
                                     updateScore(0);
                                 }
                             } catch (error) {
-                                // console.warn('Error detecting trainer pose:', error);
                                 updateScore(0);
                             }
                         } else {
-                            // console.log('Trainer video not ready:', {
-                            //     readyState: trainerVideoElement?.readyState,
-                            //     width: trainerVideoElement?.videoWidth,
-                            //     height: trainerVideoElement?.videoHeight
-                            // });
+
                             updateScore(0);
                         }
                     } else if (currentMode === 'captured') {
@@ -921,20 +872,10 @@ async function detectPose() {
                                 JSON.parse(latestImage.dataset.poseData) : null;
 
                             if (capturedPoseData) {
-                                console.log('Comparing with captured image:', {
-                                    imageSrc: latestImage.src,
-                                    timestamp: latestImage.closest('.captured-image-wrapper')?.querySelector('.captured-image-timestamp')?.textContent
-                                });
 
                                 // Calculate and display similarity score with captured pose
                                 const similarity = calculateConfidenceWeightedScore(localPose, capturedPoseData);
-                                console.log('Pose similarity with captured image:', {
-                                    similarity: similarity.toFixed(2),
-                                    capturedImageSrc: latestImage.src,
-                                    localVideoId: videoElement.id,
-                                    capturedPoseData: capturedPoseData,
-                                    localPose: localPose
-                                });
+
 
                                 // Ensure we have valid poses for comparison
                                 if (localPose && capturedPoseData &&
@@ -942,29 +883,18 @@ async function detectPose() {
                                     localPose.keypoints.length > 0 && capturedPoseData.keypoints.length > 0) {
                                     updateScore(similarity);
                                 } else {
-                                    console.log('Invalid pose data for comparison:', {
-                                        localPoseValid: !!localPose,
-                                        capturedPoseValid: !!capturedPoseData,
-                                        localKeypoints: localPose?.keypoints?.length,
-                                        capturedKeypoints: capturedPoseData?.keypoints?.length
-                                    });
+
                                     updateScore(0);
                                 }
                             } else {
-                                console.log('No captured pose data found in image:', {
-                                    imageSrc: latestImage.src,
-                                    hasDataset: !!latestImage.dataset,
-                                    datasetKeys: Object.keys(latestImage.dataset || {})
-                                });
+
                                 updateScore(0);
                             }
                         } else {
-                            console.log('No captured images available for comparison');
                             updateScore(0);
                         }
                     }
                 } else {
-                    // console.log('No local pose detected in video:', videoElement.id);
                     updateScore(0);
                 }
             }
@@ -1058,10 +988,6 @@ function storePoseDataWithImage(imgElement, poseData) {
         // Add a visual indicator that pose data is available
         imgElement.classList.add('has-pose-data');
 
-        console.log('Successfully stored pose data with image:', {
-            keypoints: poseData.keypoints.length,
-            score: poseData.score
-        });
 
         return true;
     } catch (error) {

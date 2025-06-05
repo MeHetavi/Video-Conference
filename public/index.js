@@ -32,21 +32,16 @@ const remoteAudios = document.getElementById('remoteAudios');
 
 function joinRoom(name, room_id) {
   if (rc && rc.isOpen()) {
-    console.log('Already connected to a room');
   } else {
     initEnumerateDevices();
 
     const urlParts = window.location.pathname.split('/');
     const isTrainer = urlParts[3] || '0';
-    console.log('Is trainer:', isTrainer);
 
     // Set room_id on socket
     if (window.socket) {
       window.socket.room_id = room_id;
-      console.log('Set room_id on socket:', {
-        socketId: window.socket.id,
-        roomId: room_id
-      });
+
     }
 
     rc = new RoomClient(
@@ -217,7 +212,6 @@ function showNotification(type, username) {
 
   // Only show notifications to trainer
   if (!rc || !rc.isTrainer) {
-    console.log('Not showing notification - not trainer or rc not initialized');
     return;
   }
 
