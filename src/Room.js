@@ -164,7 +164,18 @@ module.exports = class Room {
   }
 
   closeProducer(socket_id, producer_id) {
-    this.peers.get(socket_id).closeProducer(producer_id)
+    if (!socket_id || !producer_id) {
+      console.warn('Invalid socket_id or producer_id provided to closeProducer');
+      return;
+    }
+
+    const peer = this.peers.get(socket_id);
+    if (!peer) {
+      console.warn(`Peer ${socket_id} not found`);
+      return;
+    }
+
+    peer.closeProducer(producer_id);
   }
 
   broadCast(socket_id, name, data) {
@@ -182,9 +193,19 @@ module.exports = class Room {
   }
 
   toJson() {
+    const peersData = Array.from(this.peers.entries()).map(([id, peer]) => ({
+      id: peer.id,
+      name: peer.name,
+      isTrainer: peer.isTrainer,
+      producers: Array.from(peer.producers.keys()),
+      consumers: Array.from(peer.consumers.keys())
+    }));
+
     return {
       id: this.id,
-      peers: JSON.stringify([...this.peers])
+      peers: peersData,
+      router: this.router ? this.router.id : null,
+      activeTrainers: peersData.filter(peer => peer.isTrainer).length
     }
   }
 }

@@ -96,13 +96,24 @@ module.exports = class Peer {
   }
 
   closeProducer(producer_id) {
-    try {
-      this.producers.get(producer_id).close()
-    } catch (e) {
-      console.warn(e)
+    if (!producer_id) {
+      console.warn('No producer_id provided to closeProducer');
+      return;
     }
 
-    this.producers.delete(producer_id)
+    const producer = this.producers.get(producer_id);
+    if (!producer) {
+      console.warn(`Producer ${producer_id} not found`);
+      return;
+    }
+
+    try {
+      producer.close();
+    } catch (e) {
+      console.warn(`Error closing producer ${producer_id}:`, e);
+    }
+
+    this.producers.delete(producer_id);
   }
 
   getProducer(producer_id) {

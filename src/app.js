@@ -1,5 +1,4 @@
 const express = require('express')
-
 const app = express()
 const https = require('httpolyglot')
 const fs = require('fs')
@@ -9,17 +8,20 @@ const path = require('path')
 const Room = require('./Room')
 const Peer = require('./Peer')
 
+const LOG_PREFIX = '[MEDIA FLOW]';
+
 const options = {
   key: fs.readFileSync(path.join(__dirname, config.sslKey), 'utf-8'),
   cert: fs.readFileSync(path.join(__dirname, config.sslCrt), 'utf-8')
 }
 
-
-const LOG_PREFIX = '[MEDIA FLOW]';
-
 const httpsServer = https.createServer(options, app)
 const io = require('socket.io')(httpsServer)
 
+const roomList = new Map()
+
+// Add a map to store captured images for each room
+const roomCapturedImages = new Map()
 
 app.get('/', (req, res) => {
   res.send('This is not the video conferencing route. Please go to /vc');
@@ -31,7 +33,6 @@ app.get('/:username/:roomId/:isTrainer?', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
-
 httpsServer.listen(config.listenPort, () => {
   console.log('Listening on https://' + config.listenIp + ':' + config.listenPort)
 })
@@ -39,25 +40,23 @@ httpsServer.listen(config.listenPort, () => {
 // all mediasoup workers
 let workers = []
 let nextMediasoupWorkerIdx = 0
-/**
- * roomList
- * {
- *  room_id: Room {
- *      id:
- *      router:
- *      peers: {
- *          id:,
- *          name:,
- *          master: [boolean],
- *          transports: [Map],
- *          producers: [Map],
- *          consumers: [Map],
- *          rtpCapabilities:
- *      }
- *  }
- * }
- */
-let roomList = new Map()
+  /**
+   * roomList
+   * {
+   *  room_id: Room {
+   *      id:
+   *      router:
+   *      peers: {
+   *          id:,
+   *          name:,
+   *          master: [boolean],
+   *          transports: [Map],
+   *          producers: [Map],
+   *          consumers: [Map],
+   *          rtpCapabilities:
+   *      }
+   *  }
+   */
 
   ; (async () => {
     await createWorkers()
@@ -91,7 +90,17 @@ async function createWorkers() {
 }
 
 io.on('connection', (socket) => {
+  console.log(`${LOG_PREFIX} Client connected: ${socket.id}`);
 
+  // Set room_id from query parameters if available
+  const query = socket.handshake.query;
+  if (query.roomId) {
+    socket.room_id = query.roomId;
+    console.log(`${LOG_PREFIX} Set room_id from query:`, {
+      socketId: socket.id,
+      roomId: query.roomId
+    });
+  }
 
   socket.on('createRoom', async ({ room_id }, callback) => {
     if (roomList.has(room_id)) {
@@ -149,6 +158,10 @@ io.on('connection', (socket) => {
       name: name,
       isTrainer: isTrainerBool
     });
+
+    // Send all captured images to the new user
+    const roomImages = roomCapturedImages.get(room_id) || [];
+    socket.emit('loadCapturedImages', roomImages);
 
     cb(roomList.get(room_id).toJson());
   })
@@ -259,6 +272,11 @@ io.on('connection', (socket) => {
             name: peerName
           });
 
+          // If room is empty, clean up captured images
+          if (room.getPeers().size === 0) {
+            roomCapturedImages.delete(socket.room_id);
+          }
+
           console.log(`Notified room ${socket.room_id} that peer ${peerName} has left`);
         }
       } catch (error) {
@@ -268,12 +286,22 @@ io.on('connection', (socket) => {
   })
 
   socket.on('producerClosed', ({ producer_id }) => {
+    if (!socket.room_id || !producer_id) {
+      console.warn('Invalid room_id or producer_id in producerClosed event');
+      return;
+    }
 
-    roomList.get(socket.room_id).closeProducer(socket.id, producer_id)
+    const room = roomList.get(socket.room_id);
+    if (!room) {
+      console.warn(`Room ${socket.room_id} not found`);
+      return;
+    }
+
+    room.closeProducer(socket.id, producer_id);
 
     // Get the kind (audio/video) of the closed producer
-    const peer = roomList.get(socket.room_id).getPeers().get(socket.id)
-    const kind = peer ? (producer_id.includes('audio') ? 'audio' : 'video') : null
+    const peer = room.getPeers().get(socket.id);
+    const kind = peer ? (producer_id.includes('audio') ? 'audio' : 'video') : null;
 
     // Notify all peers in the room to update their participants list
     if (kind) {
@@ -281,9 +309,9 @@ io.on('connection', (socket) => {
         peerId: socket.id,
         kind: kind,
         state: 'closed'
-      })
+      });
     }
-  })
+  });
 
   socket.on('exitRoom', async (_, callback) => {
     console.log('Client exiting room:', socket.id);
@@ -409,6 +437,42 @@ io.on('connection', (socket) => {
       console.error('Error restarting ICE:', error);
       callback({ error: error.message });
     }
+  });
+
+  // Update the captureAndBroadcastImage event handler
+  socket.on('captureAndBroadcastImage', ({ imageData, timestamp }) => {
+    if (!socket.room_id) {
+      return;
+    }
+
+    const room = roomList.get(socket.room_id);
+    if (!room) {
+      return;
+    }
+
+    // Store the captured image in the room's image list
+    if (!roomCapturedImages.has(socket.room_id)) {
+      roomCapturedImages.set(socket.room_id, []);
+    }
+
+    const roomImages = roomCapturedImages.get(socket.room_id);
+    roomImages.push({
+      imageData,
+      timestamp,
+      capturedBy: socket.id
+    });
+
+    // Keep only the last 5 images
+    if (roomImages.length > 5) {
+      roomImages.shift();
+    }
+
+    // Broadcast the captured image to all peers in the room
+    socket.to(socket.room_id).emit('displayCapturedImage', {
+      imageData,
+      timestamp,
+      capturedBy: socket.id
+    });
   });
 })
 

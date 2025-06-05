@@ -1,5 +1,12 @@
+urlParts = window.location.pathname.split('/');
+isTrainer = urlParts[3] || '0';
 
-const socket = io()
+// Initialize socket with query parameters
+const socket = io({
+  query: {
+    isTrainer: isTrainer
+  }
+});
 
 let producer = null
 
@@ -19,20 +26,45 @@ socket.request = function request(type, data = {}) {
 
 let rc = null
 
+const localMedia = document.getElementById('localMedia');
+const remoteVideos = document.getElementById('remoteVideos');
+const remoteAudios = document.getElementById('remoteAudios');
+
 function joinRoom(name, room_id) {
   if (rc && rc.isOpen()) {
+    console.log('Already connected to a room');
   } else {
-    initEnumerateDevices()
+    initEnumerateDevices();
 
-    // Get isTrainer from URL
     const urlParts = window.location.pathname.split('/');
     const isTrainer = urlParts[3] || '0';
+    console.log('Is trainer:', isTrainer);
 
-    rc = new RoomClient(localMedia, remoteVideos, remoteAudios, window.mediasoupClient, socket, room_id, name, roomOpen, isTrainer)
+    // Set room_id on socket
+    if (window.socket) {
+      window.socket.room_id = room_id;
+      console.log('Set room_id on socket:', {
+        socketId: window.socket.id,
+        roomId: room_id
+      });
+    }
 
-    addListeners()
+    rc = new RoomClient(
+      localMedia,
+      remoteVideos,
+      remoteAudios,
+      window.mediasoupClient,
+      socket,
+      room_id,
+      name,
+      roomOpen,
+      isTrainer
+    );
+
+    addListeners();
   }
 }
+
 
 function roomOpen() {
   hide(login)
@@ -44,8 +76,8 @@ function roomOpen() {
   hide(stopAudioButton)
   reveal(startVideoButton)
   hide(stopVideoButton)
-  reveal(startScreenButton)
-  hide(stopScreenButton)
+  // reveal(startScreenButton)
+  // hide(stopScreenButton)
   reveal(exitButton)
   reveal(devicesButton)
   reveal(participantsButton)
@@ -93,7 +125,6 @@ function addListeners() {
     hide(devicesList)
     hide(videoMedia)
     hide(callScreen)
-    hide(copyButton)
     hide(devicesButton)
     hide(participantsButton)
     hide(toggleParticipantsBtn)
@@ -240,15 +271,16 @@ function hide(elem) {
 
 function reveal(elem) {
   if (elem) elem.className = ''
-}
 
-// Add this function to toggle the participants panel
-function toggleParticipants() {
-  const panel = document.getElementById('participantsPanel')
-  if (panel.classList.contains('hidden')) {
-    panel.classList.remove('hidden')
-  } else {
-    panel.classList.add('hidden')
+
+  // Add this function to toggle the participants panel
+  function toggleParticipants() {
+    const panel = document.getElementById('participantsPanel')
+    if (panel.classList.contains('hidden')) {
+      panel.classList.remove('hidden')
+    } else {
+      panel.classList.add('hidden')
+    }
   }
-}
 
+}

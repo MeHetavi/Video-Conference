@@ -4,15 +4,46 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Video Conference</title>
+    <title>Yoga Connect+</title>
     <link rel="stylesheet" href="/style.css" />
     <script src="/socket.io/socket.io.js"></script>
     <script src="/modules/mediasoupclient.min.js"></script>
     <script src="/modules/EventEmitter.min.js"></script>
     <script src="https://kit.fontawesome.com/abdff43453.js" crossorigin="anonymous"></script>
     <script src="/RoomClient.js"></script>
-    <script src="mediaflow-logger.js"></script>
-    <script src="room-client-logger.js"></script>
+    <script src="/mediaflow-logger.js"></script>
+    <script src="/room-client-logger.js"></script>
+    <!-- Import TensorFlow.js and PoseNet -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js"></script>
+    <!-- Import pose detection module -->
+    <script type="module">
+        import {
+            initializePoseDetection,
+            startDetection,
+            stopDetection,
+            storePoseDataWithImage
+        } from '/pose-detection.js';
+
+        // Initialize global pose detection object with all necessary functions
+        window.poseDetection = {
+            initializePoseDetection,
+            startDetection,
+            stopDetection,
+            storePoseDataWithImage,
+            detector: null,
+            createDetector: poseDetection.createDetector,
+            SupportedModels: poseDetection.SupportedModels
+        };
+
+        // Wait for TensorFlow.js to be ready
+        window.tf.ready().then(() => {
+            console.log('TensorFlow.js is ready');
+        }).catch(error => {
+            console.error('Error initializing TensorFlow.js:', error);
+        });
+    </script>
 </head>
 
 <body>
@@ -21,9 +52,9 @@
             <div id="login">
                 <h1>Join Meeting</h1>
                 <label for="roomidInput">Room ID</label>
-                <input id="roomidInput" placeholder="Enter room ID" disabled value="<%= roomId %>" type="text" />
+                <input id="roomidInput" placeholder="Enter room ID" disabled type="text" />
                 <label for="nameInput">Your Name</label>
-                <input id="nameInput" value="<%= username %>" disabled type="text" />
+                <input id="nameInput" disabled type="text" />
                 <button id="joinButton" onclick="joinRoom(nameInput.value, roomidInput.value)">
                     Join Now
                 </button>
@@ -35,11 +66,12 @@
         <!-- Video area with strict height boundary -->
         <div id="videoMedia" class="hidden">
             <!-- Remote videos container with fixed boundaries -->
+
             <div id="remoteVideos"></div>
             <div id="remoteAudios"></div>
+            <div id="localMedia"></div>
 
             <!-- Local video in top right -->
-            <div id="localMedia"></div>
 
             <!-- Participants panel -->
             <div id="participantsPanel" class="participants-panel hidden">
@@ -57,7 +89,6 @@
         <div id="control" class="hidden">
             <button id="startAudioButton" class="control-button hidden"
                 onclick="rc.produce(RoomClient.mediaType.audio, audioSelect.value)">
-                <!-- <i class="fas fa-microphone"></i> -->
                 <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
                     fill="#e3e3e3">
                     <path
@@ -66,7 +97,6 @@
             </button>
             <button id="stopAudioButton" class="control-button hidden"
                 onclick="rc.closeProducer(RoomClient.mediaType.audio)">
-                <!-- <i class="fas fa-microphone-slash"></i> -->
                 <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
                     fill="#e3e3e3">
                     <path
@@ -76,7 +106,6 @@
 
             <button id="startVideoButton" class="control-button hidden"
                 onclick="rc.produce(RoomClient.mediaType.video, videoSelect.value)">
-                <!-- <i class="fas fa-video"></i> -->
                 <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
                     fill="#e3e3e3">
                     <path
@@ -85,7 +114,6 @@
             </button>
             <button id="stopVideoButton" class="control-button hidden"
                 onclick="rc.closeProducer(RoomClient.mediaType.video)">
-                <!-- <i class="fas fa-video-slash"></i> -->
                 <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
                     fill="#e3e3e3">
                     <path
@@ -95,7 +123,6 @@
 
             <button id="startScreenButton" class="control-button hidden"
                 onclick="rc.produce(RoomClient.mediaType.screen)">
-                <!-- <i class="fas fa-desktop"></i> -->
                 <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
                     fill="#e3e3e3">
                     <path
@@ -108,7 +135,6 @@
             </button>
 
             <button id="participantsButton" class="control-button hidden" onclick="toggleParticipants()">
-                <!-- <i class="fas fa-users"></i> -->
                 <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
                     fill="#e3e3e3">
                     <path
@@ -116,8 +142,8 @@
                 </svg>
             </button>
 
+
             <button id="devicesButton" class="control-button hidden" onclick="rc.showDevices()">
-                <!-- <i class="fas fa-cog"></i> -->
                 <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
                     fill="#e3e3e3">
                     <path
@@ -126,12 +152,27 @@
             </button>
 
             <button id="exitButton" class="control-button hidden" onclick="rc.exit()">
-                <!-- <i class="fas fa-phone-slash"></i> -->
                 <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="red">
                     <path
                         d="m139-317-79-80q-14-14-14.5-33.5T59-464q79-85 187-134.5T480-648q126 0 234 49.5T901-464q14 14 13.5 33.5T900-397l-79 80q-11 11-28 14t-34-9l-115-82q-9-7-14.5-17.5t-5.5-21.15V-554q-35-11-70.74-16.5Q517.52-576 480-576t-73.26 5.5Q371-565 336-554v121.35q0 10.65-5.5 21.15Q325-401 316-394l-115 82q-17 12-34.5 8.5T139-317Zm125-211q-37 18-71.5 43T127-431l49 49 88-63v-83Zm432 0v83l88 63 49-49q-31-30-65-54.5T696-528Zm-432 0Zm432 0Z" />
                 </svg>
             </button>
+
+            <!-- Pose Detection Toggle -->
+            <div class="pose-detection-controls">
+                <button id="poseDetectionButton" class="control-button hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px"
+                        fill="#e3e3e3">
+                        <path
+                            d="M272-187.69q-22.31 0-37.15-13.31Q220-214.31 220-236.62q0-15.61 8.92-27.19 8.93-11.57 22.77-17.27L420-347.69v-150q-71.69 84.54-131.27 119.19-59.58 34.65-142.58 43.12v-40.77q61.08-3.85 114.66-32.62 53.57-28.77 98.57-80.77l54-62.46q8.93-10.15 21.08-16 12.16-5.85 25.54-5.85h40q13.38 0 25.54 5.85 12.15 5.85 21.08 16l54 62.46q45 52 98.57 80.77 53.58 28.77 114.66 32.62v40.77q-83-8.47-142.58-43.12Q611.69-413.15 540-497.69v150l168.31 66.61q13.84 5.7 22.77 17.27 8.92 11.58 8.92 27.19 0 22.31-14.85 35.62-14.84 13.31-37.15 13.31H400v-6.16q0-23.69 13.54-37.23 13.54-13.54 37.23-13.54H580q9 0 14.5-5.5t5.5-14.5q0-9-5.5-14.5t-14.5-5.5H450.77q-39.69 0-65.23 25.54Q360-233.54 360-193.85v6.16h-88Zm208-441.54q-28.38 0-48.04-19.65-19.65-19.66-19.65-48.04 0-28.39 19.65-48.04 19.66-19.66 48.04-19.66t48.04 19.66q19.65 19.65 19.65 48.04 0 28.38-19.65 48.04-19.66 19.65-48.04 19.65Z" />
+                    </svg>
+                </button>
+                <select id="poseDetectionMode" class="pose-detection-mode hidden">
+                    <option value="live">Live</option>
+                    <option value="captured" disabled>Captured</option>
+                </select>
+            </div>
+
         </div>
 
         <!-- Devices selection panel positioned above controls -->
@@ -164,16 +205,283 @@
     </button>
 
     <script src="/index.js"></script>
+
     <script>
-        // inside public/index.html <script> tag
-        const urlParts = window.location.pathname.split('/');
-        const username = urlParts[1];
-        const roomId = urlParts[2];
-        const isTrainer = urlParts[3] || '0'; // Default to '0' if not provided
+        // Global variables to store URL parameters
+        let username = '';
+        let roomId = '';
+        let isTrainer = false;
 
-        document.getElementById('nameInput').value = username;
-        document.getElementById('roomidInput').value = roomId;
+        // Make socket instance globally available
+        window.socket = null;
 
+        // Function to parse URL parameters
+        function parseUrlParameters() {
+            try {
+                // Get the pathname and split it into parts
+                const pathname = window.location.pathname;
+                const urlParts = pathname.split('/').filter(part => part !== ''); // Remove empty parts
+
+                console.log('Full pathname:', pathname);
+                console.log('URL parts:', urlParts);
+
+                // Extract parameters based on URL structure
+                // Assuming URL structure: /username/roomId/isTrainer or /username/roomId
+                if (urlParts.length >= 2) {
+                    username = decodeURIComponent(urlParts[0]) || '';
+                    roomId = decodeURIComponent(urlParts[1]) || '';
+
+                    // Check for isTrainer parameter (can be '1', 'true', or any truthy value)
+                    if (urlParts.length >= 3) {
+                        // const trainerParam = urlParts[2].toLowerCase();
+                        isTrainer = true;
+                    }
+                } else {
+                    console.warn('URL does not contain expected parameters');
+                }
+
+                // Also check URL search parameters as fallback
+                const urlParams = new URLSearchParams(window.location.search);
+                if (!username && urlParams.has('username')) {
+                    username = urlParams.get('username');
+                }
+                if (!roomId && urlParams.has('roomId')) {
+                    roomId = urlParams.get('roomId');
+                }
+
+                console.log('Parsed parameters:', { username, roomId, isTrainer });
+
+            } catch (error) {
+                console.error('Error parsing URL parameters:', error);
+            }
+        }
+
+        // Function to populate form fields
+        function populateFormFields() {
+            try {
+                const nameInput = document.getElementById('nameInput');
+                const roomidInput = document.getElementById('roomidInput');
+
+                if (nameInput && username) {
+                    nameInput.value = username;
+                }
+
+                if (roomidInput && roomId) {
+                    roomidInput.value = roomId;
+                }
+
+                console.log('Form fields populated successfully');
+
+            } catch (error) {
+                console.error('Error populating form fields:', error);
+            }
+        }
+
+        // Function to handle trainer-specific functionality
+        function handleTrainerRole() {
+            if (isTrainer) {
+                console.log('User is a trainer - enabling trainer features');
+                // Add trainer-specific functionality here
+                document.body.classList.add('trainer-mode');
+
+                // You can add trainer-specific UI modifications here
+                // For example:
+                // - Show additional controls
+                // - Enable special permissions
+                // - Modify the interface
+            } else {
+                console.log('User is a regular participant');
+                document.body.classList.add('participant-mode');
+            }
+        }
+
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('DOM Content Loaded - Initializing...');
+
+            // Parse URL parameters
+            parseUrlParameters();
+
+            // Populate form fields
+            populateFormFields();
+
+            // Handle trainer role
+            handleTrainerRole();
+
+            // Make parameters globally available
+            window.roomConfig = {
+                username: username,
+                roomId: roomId,
+                isTrainer: isTrainer
+            };
+
+            // Initialize socket
+            window.socket = io({
+                query: {
+                    isTrainer: isTrainer ? 'true' : 'false',
+                    roomId: roomId
+                }
+            });
+
+            // Set room_id on socket
+            window.socket.room_id = roomId;
+
+            // Log socket connection status
+            window.socket.on('connect', () => {
+                console.log('Socket connected:', {
+                    id: window.socket.id,
+                    roomId: roomId,
+                    isTrainer: isTrainer
+                });
+            });
+
+            window.socket.on('connect_error', (error) => {
+                console.error('Socket connection error:', error);
+            });
+
+            console.log('Initialization complete:', window.roomConfig);
+        });
+
+        // Utility function to get current room configuration
+        function getRoomConfig() {
+            return {
+                username: username,
+                roomId: roomId,
+                isTrainer: isTrainer
+            };
+        }
+
+        // Make utility function globally available
+        window.getRoomConfig = getRoomConfig;
+    </script>
+
+    <script>
+        // Add pose detection button handler
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('Setting up pose detection button...');
+            const poseButton = document.getElementById('poseDetectionButton');
+            const modeSelect = document.getElementById('poseDetectionMode');
+
+            // Function to update captured mode availability
+            function updateCapturedModeAvailability() {
+                const capturedOption = modeSelect.querySelector('option[value="captured"]');
+                const hasCapturedImages = document.querySelectorAll('.captured-image').length > 0;
+
+                if (capturedOption) {
+                    if (hasCapturedImages) {
+                        capturedOption.disabled = false;
+                        capturedOption.textContent = 'Captured';
+                    } else {
+                        capturedOption.disabled = true;
+                        capturedOption.textContent = 'Captured (No Images)';
+                        if (modeSelect.value === 'captured') {
+                            modeSelect.value = 'live';
+                        }
+                    }
+                }
+            }
+
+            // Listen for captured images changes
+            const observer = new MutationObserver(updateCapturedModeAvailability);
+            const capturedImagesContainer = document.getElementById('capturedImagesContainer');
+            if (capturedImagesContainer) {
+                observer.observe(capturedImagesContainer, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+
+            // Initial check for captured images
+            updateCapturedModeAvailability();
+
+            if (poseButton) {
+                console.log('Pose detection button found');
+                poseButton.addEventListener('click', async function () {
+                    console.log('Pose detection button clicked');
+
+                    // Wait for local video element to be available
+                    const waitForVideo = () => {
+                        return new Promise((resolve) => {
+                            const checkVideo = () => {
+                                // Look for the local video element in the remoteVideos container
+                                const video = document.querySelector('#remoteVideos .video-container[id^="container-local-"] video');
+                                console.log('Checking for local video element:', video);
+                                if (video && video.readyState >= 2) { // HAVE_CURRENT_DATA
+                                    console.log('Local video element found and ready');
+                                    resolve(video);
+                                } else {
+                                    console.log('Local video not ready, retrying...');
+                                    setTimeout(checkVideo, 100);
+                                }
+                            };
+                            checkVideo();
+                        });
+                    };
+
+                    try {
+                        console.log('Waiting for local video element...');
+                        const video = await waitForVideo();
+                        if (!video) {
+                            console.error('No local video element found');
+                            return;
+                        }
+
+                        // Find the local video container
+                        const container = video.closest('.video-container');
+                        console.log('Local video container:', container);
+
+                        if (!container) {
+                            console.error('No container found for video');
+                            return;
+                        }
+
+                        const isActive = this.classList.contains('active');
+                        console.log('Button active state:', isActive);
+
+                        if (!isActive) {
+                            try {
+                                console.log('Starting pose detection...');
+                                // Start pose detection
+                                const success = await window.poseDetection.initializePoseDetection(video, container);
+                                console.log('Pose detection initialization result:', success);
+
+                                if (success) {
+                                    this.classList.add('active');
+                                    this.style.backgroundColor = '#4CAF50';
+                                    this.querySelector('svg').style.fill = '#ffffff';
+                                    // Show the pose detection mode dropdown
+                                    if (modeSelect) {
+                                        modeSelect.classList.remove('hidden');
+                                        updateCapturedModeAvailability();
+                                    }
+                                    console.log('Pose detection started successfully');
+                                } else {
+                                    console.error('Failed to initialize pose detection');
+                                }
+                            } catch (error) {
+                                console.error('Error starting pose detection:', error);
+                            }
+                        } else {
+                            console.log('Stopping pose detection...');
+                            // Stop pose detection
+                            window.poseDetection.stopDetection();
+                            this.classList.remove('active');
+                            this.style.backgroundColor = '';
+                            this.querySelector('svg').style.fill = '#e3e3e3';
+                            // Hide the pose detection mode dropdown
+                            if (modeSelect) {
+                                modeSelect.classList.add('hidden');
+                            }
+                            console.log('Pose detection stopped');
+                        }
+                    } catch (error) {
+                        console.error('Error waiting for video:', error);
+                    }
+                });
+            } else {
+                console.error('Pose detection button not found');
+            }
+        });
     </script>
 </body>
 

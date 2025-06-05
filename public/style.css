@@ -114,14 +114,14 @@ body {
 /* Remote videos container with fixed boundaries */
 #remoteVideos {
   width: 100%;
-  height: 100%;
+  height: fit-content;
   /* Take full height of videoMedia */
   display: grid;
   gap: 8px;
   padding: 8px;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   grid-auto-rows: 1fr;
-  overflow: auto;
+  overflow: scroll;
   /* Allow scrolling if needed */
   box-sizing: border-box;
   /* Include padding in size calculation */
@@ -148,23 +148,21 @@ body {
   }
 }
 
+
+
 /* Video container and overlay styles */
 .video-container {
   position: relative;
   width: 100%;
   height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   border-radius: 12px;
   overflow: hidden;
   background-color: #2a2a2a;
 }
 
-.video-container video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 12px;
-  background-color: #2a2a2a;
-}
 
 .video-overlay {
   position: absolute;
@@ -210,11 +208,10 @@ body {
   top: 20px;
   right: 20px;
   z-index: 100;
-  width: 280px;
-  height: 158px;
+  width: 400px;
+  height: auto;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
 }
 
@@ -783,4 +780,404 @@ body {
     width: 24px;
     height: 24px;
   }
+}
+
+/* Pose Detection Controls */
+.pose-detection-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#poseDetectionButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #e3e3e3;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#poseDetectionButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+#poseDetectionButton.active {
+  background: #4CAF50;
+}
+
+#poseDetectionButton.active svg {
+  fill: #ffffff;
+}
+
+#poseDetectionButton svg {
+  transition: fill 0.3s ease;
+}
+
+/* Pose Detection Mode Dropdown Styles */
+.pose-detection-mode {
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #e3e3e3;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: 8px;
+  display: inline-block;
+}
+
+.pose-detection-mode:hover {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.pose-detection-mode:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.pose-detection-mode option {
+  background: #2d2d2d;
+  color: #e3e3e3;
+}
+
+.pose-detection-mode option:disabled {
+  background: #1d1d1d;
+  color: #666;
+  cursor: not-allowed;
+}
+
+/* Responsive styles for dropdown */
+@media (max-width: 768px) {
+  .pose-detection-mode {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pose-detection-mode {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}
+
+/* Make video and canvas fill the container */
+.video-container {
+  position: relative;
+  width: 100%;
+  height: fit-content;
+  overflow: hidden;
+}
+
+.video-container video {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+video,
+canvas {
+  object-fit: contain;
+  width: 100%;
+  height: fit-content;
+}
+
+.control-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* padding: 8px 16px; */
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #e3e3e3;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.control-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.control-button.active {
+  background: #4CAF50;
+}
+
+.control-button.active svg {
+  fill: #ffffff;
+}
+
+.control-button svg {
+  transition: fill 0.3s ease;
+}
+
+/* Pose detection canvas styles */
+.pose-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  transform-origin: top left;
+}
+
+/* Ensure video container maintains aspect ratio */
+#localMedia {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+#localMedia video {
+  width: 100%;
+  height: fit-content;
+  object-fit: contain;
+}
+
+.main-video-section video {
+  max-width: 100%;
+  height: fit-content;
+  object-fit: contain;
+}
+
+.other-participants-scroll-section video {
+  max-width: 100%;
+  height: fit-content;
+  object-fit: contain;
+}
+
+/* Toggle Captured Images Button */
+.toggle-captured-images-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 40px;
+  height: 40px;
+  background: rgba(26, 26, 26, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  z-index: 1001;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.toggle-captured-images-btn i {
+  font-size: 1.2rem;
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
+.toggle-captured-images-btn:hover {
+  background: rgba(37, 99, 235, 0.8);
+  transform: translateY(-2px);
+}
+
+.toggle-captured-images-btn.active {
+  background: #2563eb;
+}
+
+/* Captured Images Container */
+#capturedImagesContainer {
+  position: fixed;
+  top: 70px;
+  /* Position below the toggle button */
+  left: 20px;
+  max-width: 300px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+#capturedImagesContainer.hidden {
+  display: none;
+}
+
+.captured-image {
+  width: 100%;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.captured-image:hover {
+  transform: scale(1.02);
+}
+
+.captured-image-wrapper {
+  margin-bottom: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  border-radius: 4px;
+  transition: transform 0.2s ease;
+}
+
+.captured-image-wrapper:hover {
+  transform: translateY(-2px);
+}
+
+.captured-image-timestamp {
+  color: white;
+  font-size: 12px;
+  margin-bottom: 5px;
+  opacity: 0.8;
+}
+
+/* Add scrollbar styles for the captured images container */
+#capturedImagesContainer::-webkit-scrollbar {
+  width: 8px;
+}
+
+#capturedImagesContainer::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+#capturedImagesContainer::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+#capturedImagesContainer::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .toggle-captured-images-btn {
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+  }
+
+  #capturedImagesContainer {
+    top: 56px;
+    right: 10px;
+    max-width: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .toggle-captured-images-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  #capturedImagesContainer {
+    max-width: 200px;
+  }
+}
+
+/* Capture Countdown Overlay */
+.capture-countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 48px;
+  font-weight: bold;
+  color: white;
+  z-index: 2000;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  animation: pulse 1s infinite;
+}
+
+.capture-countdown.hidden {
+  display: none;
+}
+
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  }
+
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Responsive adjustments for countdown */
+@media (max-width: 768px) {
+  .capture-countdown {
+    width: 100px;
+    height: 100px;
+    font-size: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .capture-countdown {
+    width: 80px;
+    height: 80px;
+    font-size: 32px;
+  }
+}
+
+/* Scrollbar Track */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+/* Scrollbar Track Background */
+::-webkit-scrollbar-track {
+  background: #1e1e1e;
+  border-radius: 4px;
+}
+
+/* Scrollbar Thumb (draggable part) */
+::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+  border: 2px solid #1e1e1e;
+  /* Gives padding-like effect */
+}
+
+/* Scrollbar Thumb on Hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+
+/* Optional: Corner where vertical and horizontal scrollbars meet */
+::-webkit-scrollbar-corner {
+  background: #1e1e1e;
+}
+
+html {
+  scroll-behavior: smooth;
 }
