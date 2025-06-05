@@ -2,7 +2,7 @@ urlParts = window.location.pathname.split('/');
 isTrainer = urlParts[3] || '0';
 
 // Initialize socket with query parameters
-const socket = io('https://connect.ycp.life', {
+const socket = io({
   query: { isTrainer: isTrainer },
   transports: ['websocket']
 });

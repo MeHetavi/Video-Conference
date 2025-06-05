@@ -23,7 +23,30 @@ const io = require('socket.io')(httpsServer, {
   },
   transports: ['websocket', 'polling'],
   pingTimeout: 60000,
-  pingInterval: 25000
+  pingInterval: 25000,
+  allowEIO3: true, // Allow Engine.IO v3 clients
+  path: '/socket.io/', // Explicitly set the path
+  serveClient: false, // Don't serve the client
+  cookie: false, // Disable cookies
+  allowUpgrades: true, // Allow transport upgrades
+  perMessageDeflate: {
+    threshold: 2048 // Only compress data above this size
+  }
+});
+
+// Add error handling for the server
+httpsServer.on('error', (error) => {
+  console.error('Server error:', error);
+});
+
+// Add error handling for socket.io
+io.on('error', (error) => {
+  console.error('Socket.IO error:', error);
+});
+
+// Add connection error handling
+io.engine.on('connection_error', (error) => {
+  console.error('Connection error:', error);
 });
 
 const roomList = new Map()
