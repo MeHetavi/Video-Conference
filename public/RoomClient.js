@@ -1744,23 +1744,25 @@ class RoomClient {
     // Get the video element using the correct selector
     const videoElement = document.querySelector(`#container-local-${this.socket.id} video`)
     if (!videoElement) {
-      console.warn('No video element found')
+      console.error('No video element found for capture')
       return
     }
 
     // Get the video container
     const videoContainer = videoElement.closest('.video-container')
     if (!videoContainer) {
-      console.warn('No video container found')
+      console.error('No video container found for capture')
       return
     }
 
     // Get the capture button
     const captureButton = document.querySelector('.capture-button')
     if (!captureButton) {
-      console.warn('No capture button found')
+      console.error('No capture button found')
       return
     }
+
+    console.log('Starting image capture process...')
 
     // Hide capture button
     captureButton.style.display = 'none'
@@ -1810,6 +1812,8 @@ class RoomClient {
         clearInterval(countdownInterval)
         countdownOverlay.classList.add('hidden')
 
+        console.log('Capturing image...')
+
         // Set canvas dimensions to match video
         this.captureCanvas.width = videoElement.videoWidth
         this.captureCanvas.height = videoElement.videoHeight
@@ -1826,6 +1830,8 @@ class RoomClient {
         // Store the captured image
         this.capturedImages.set(timestamp, imageData)
 
+        console.log('Broadcasting image to peers...')
+
         // Broadcast the image to all peers
         this.socket.emit('captureAndBroadcastImage', {
           imageData,
@@ -1834,6 +1840,8 @@ class RoomClient {
 
         // Display the image locally
         this.displayCapturedImage(imageData, timestamp, this.socket.id)
+
+        console.log('Image capture and broadcast completed')
 
         // Remove cancel button and show capture button
         cancelButton.remove()
@@ -1851,9 +1859,12 @@ class RoomClient {
   }
 
   displayCapturedImage(imageData, timestamp, capturedBy) {
+    console.log('Displaying captured image...');
+
     // Create image container if it doesn't exist
     let container = document.getElementById('capturedImagesContainer');
     if (!container) {
+      console.log('Creating captured images container...');
       container = document.createElement('div');
       container.id = 'capturedImagesContainer';
       container.className = 'captured-images-container hidden';
@@ -1862,6 +1873,7 @@ class RoomClient {
       // Create toggle button if it doesn't exist
       let toggleButton = document.getElementById('toggleCapturedImages');
       if (!toggleButton) {
+        console.log('Creating toggle button for captured images...');
         toggleButton = document.createElement('button');
         toggleButton.id = 'toggleCapturedImages';
         toggleButton.className = 'toggle-captured-images-btn';
@@ -1892,8 +1904,23 @@ class RoomClient {
     img.src = imageData;
     img.alt = 'Captured pose';
 
+    console.log('Image elements created, adding to container...');
+
+    // Add elements to wrapper
+    wrapper.appendChild(timestampEl);
+    wrapper.appendChild(img);
+
+    // Add wrapper to container
+    container.appendChild(wrapper);
+
+    // Show container if it was hidden
+    container.classList.remove('hidden');
+
+    console.log('Image display completed');
+
     // Try to detect pose from the captured image if pose detection is available
     if (window.poseDetection) {
+      console.log('Attempting pose detection on captured image...');
       // Create a temporary canvas element to load the image
       const tempCanvas = document.createElement('canvas');
       const tempContext = tempCanvas.getContext('2d');
@@ -1911,6 +1938,7 @@ class RoomClient {
           // Initialize detector if not already initialized
           if (!window.poseDetection.detector) {
             try {
+              console.log('Initializing pose detector...');
               // Create detector using TensorFlow.js pose detection
               const detectorConfig = {
                 modelType: 'SinglePose.Lightning',
@@ -1921,6 +1949,7 @@ class RoomClient {
                 poseDetection.SupportedModels.MoveNet,
                 detectorConfig
               );
+              console.log('Pose detector initialized successfully');
             } catch (error) {
               console.error('Error initializing pose detector:', error);
               throw error;
@@ -1928,12 +1957,14 @@ class RoomClient {
           }
 
           // Detect pose from the canvas
+          console.log('Detecting pose from image...');
           const poses = await window.poseDetection.detector.estimatePoses(tempCanvas);
           if (poses && poses.length > 0) {
             const poseData = poses[0];
 
             // Ensure we have valid keypoints
             if (poseData.keypoints && poseData.keypoints.length > 0) {
+              console.log('Pose detected successfully');
               // Store pose data with the image
               if (window.poseDetection.storePoseDataWithImage) {
                 window.poseDetection.storePoseDataWithImage(img, poseData)
@@ -1954,7 +1985,7 @@ class RoomClient {
             console.warn('No poses detected in captured image');
           }
         } catch (error) {
-          console.warn('Error detecting pose from captured image:', error);
+          console.error('Error detecting pose from captured image:', error);
         } finally {
           // Clean up
           tempCanvas.remove();
@@ -1974,16 +2005,6 @@ class RoomClient {
     } else {
       console.warn('Pose detection not available for captured image');
     }
-
-    // Add elements to wrapper
-    wrapper.appendChild(timestampEl);
-    wrapper.appendChild(img);
-
-    // Add wrapper to container
-    container.appendChild(wrapper);
-
-    // Show container if it was hidden
-    container.classList.remove('hidden');
   }
 
   // Add method to create capture button

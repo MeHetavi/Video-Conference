@@ -444,15 +444,17 @@ io.on('connection', (socket) => {
     console.log(`${LOG_PREFIX} Received image capture broadcast request from:`, socket.id);
 
     if (!socket.room_id) {
-      console.warn(`${LOG_PREFIX} No room_id found for socket ${socket.id}`);
+      console.error(`${LOG_PREFIX} No room_id found for socket ${socket.id}`);
       return;
     }
 
     const room = roomList.get(socket.room_id);
     if (!room) {
-      console.warn(`${LOG_PREFIX} Room not found:`, socket.room_id);
+      console.error(`${LOG_PREFIX} Room not found:`, socket.room_id);
       return;
     }
+
+    console.log(`${LOG_PREFIX} Room found, storing image for room:`, socket.room_id);
 
     // Store the captured image in the room's image list
     if (!roomCapturedImages.has(socket.room_id)) {
@@ -472,8 +474,11 @@ io.on('connection', (socket) => {
       roomImages.shift();
     }
 
+    // Get the number of peers in the room
+    const peerCount = room.getPeers().size;
+    console.log(`${LOG_PREFIX} Broadcasting image to ${peerCount} peers in room:`, socket.room_id);
+
     // Broadcast the captured image to all peers in the room
-    console.log(`${LOG_PREFIX} Broadcasting image to room:`, socket.room_id);
     socket.to(socket.room_id).emit('displayCapturedImage', {
       imageData,
       timestamp,
