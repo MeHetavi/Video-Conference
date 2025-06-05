@@ -208,13 +208,7 @@ const participantsPanel = document.getElementById('participantsPanel')
 const toggleParticipantsBtn = document.getElementById('toggleParticipantsBtn')
 
 // Update the showNotification function
-function showNotification(type, username) {
-
-  // Only show notifications to trainer
-  if (!rc || !rc.isTrainer) {
-    return;
-  }
-
+function showNotification(message, type = 'info', duration = 5000) {
   const container = document.getElementById('notificationContainer');
   if (!container) {
     console.error('Notification container not found');
@@ -223,39 +217,30 @@ function showNotification(type, username) {
 
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
-
-  const now = new Date();
-  const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  let icon, title, message;
-
-  if (type === 'join') {
-    icon = 'fa-user-plus';
-    title = 'User Joined';
-    message = `${username} has joined the meeting`;
-  } else if (type === 'leave') {
-    icon = 'fa-user-minus';
-    title = 'User Left';
-    message = `${username} has left the meeting`;
-  }
-
   notification.innerHTML = `
-    <div class="notification-icon">
-      <i class="fas ${icon}"></i>
-    </div>
-    <div class="notification-content">
-      <div class="notification-title">${title}</div>
-      <div class="notification-message">${message}</div>
-      <div class="notification-time">${timeString}</div>
-    </div>
-  `;
+        <span>${message}</span>
+        <button class="close-btn">&times;</button>
+    `;
 
+  // Add close button functionality
+  const closeBtn = notification.querySelector('.close-btn');
+  closeBtn.addEventListener('click', () => {
+    notification.remove();
+  });
+
+  // Add to container
   container.appendChild(notification);
 
-  // Remove notification after animation completes (5 seconds)
-  setTimeout(() => {
-    notification.remove();
-  }, 5000);
+  // Auto remove after duration
+  if (duration > 0) {
+    setTimeout(() => {
+      if (notification.parentNode === container) {
+        notification.remove();
+      }
+    }, duration);
+  }
+
+  return notification;
 }
 
 // Update the hide and reveal functions to handle these elements
