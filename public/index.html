@@ -464,7 +464,7 @@
 </html>
 
 <style>
-    /* Add notification styles */
+    /* Update notification styles */
     .notification-container {
         position: fixed;
         top: 20px;
@@ -482,20 +482,33 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        min-width: 200px;
+        min-width: 250px;
         max-width: 400px;
+        animation: slideIn 0.3s ease-out;
     }
 
-    .notification.success {
+    .notification-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .notification-icon {
+        font-size: 1.2em;
+    }
+
+    .notification-message {
+        flex: 1;
+    }
+
+    .notification.join {
         background: rgba(40, 167, 69, 0.9);
+        border-left: 4px solid #28a745;
     }
 
-    .notification.error {
+    .notification.leave {
         background: rgba(220, 53, 69, 0.9);
-    }
-
-    .notification.warning {
-        background: rgba(255, 193, 7, 0.9);
+        border-left: 4px solid #dc3545;
     }
 
     .notification .close-btn {
@@ -505,9 +518,35 @@
         cursor: pointer;
         padding: 0 5px;
         font-size: 16px;
+        opacity: 0.7;
+        transition: opacity 0.2s;
     }
 
     .notification .close-btn:hover {
-        opacity: 0.8;
+        opacity: 1;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
     }
 </style>

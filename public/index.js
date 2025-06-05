@@ -130,20 +130,14 @@ function addListeners() {
 
   // Make sure these socket event handlers are properly set up
   socket.on('newPeer', (data) => {
-    showNotification('join', data.name);
+    if (data.name) {
+      showJoinNotification(data.name);
+    }
   });
 
   socket.on('peerClosed', (data) => {
-    // We need to get the name of the peer who left
-    if (rc && rc.participants) {
-      const leftParticipant = rc.participants.find(p => p.socketId === data.peerId);
-      if (leftParticipant) {
-        showNotification('leave', leftParticipant.name);
-      } else if (data.name) {
-        showNotification('leave', data.name);
-      }
-    } else if (data.name) {
-      showNotification('leave', data.name);
+    if (data.name) {
+      showLeaveNotification(data.name);
     }
   });
 }
@@ -217,10 +211,22 @@ function showNotification(message, type = 'info', duration = 5000) {
 
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
+
+  // Add icon based on notification type
+  let icon = '';
+  if (type === 'join') {
+    icon = '👋';
+  } else if (type === 'leave') {
+    icon = '👋';
+  }
+
   notification.innerHTML = `
-        <span>${message}</span>
-        <button class="close-btn">&times;</button>
-    `;
+    <div class="notification-content">
+      ${icon ? `<span class="notification-icon">${icon}</span>` : ''}
+      <span class="notification-message">${message}</span>
+    </div>
+    <button class="close-btn">&times;</button>
+  `;
 
   // Add close button functionality
   const closeBtn = notification.querySelector('.close-btn');
@@ -241,6 +247,15 @@ function showNotification(message, type = 'info', duration = 5000) {
   }
 
   return notification;
+}
+
+// Add specific functions for join/leave notifications
+function showJoinNotification(username) {
+  showNotification(`${username} has joined the meeting`, 'join', 5000);
+}
+
+function showLeaveNotification(username) {
+  showNotification(`${username} has left the meeting`, 'leave', 5000);
 }
 
 // Update the hide and reveal functions to handle these elements
