@@ -1830,7 +1830,7 @@ class RoomClient {
         // Store the captured image
         this.capturedImages.set(timestamp, imageData)
 
-        console.log('Broadcasting image to peers...')
+        console.log('Broadcasting image to peers...', this.socket)
 
         // Broadcast the image to all peers
         this.socket.emit('captureAndBroadcastImage', {

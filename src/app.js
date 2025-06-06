@@ -1,6 +1,6 @@
 const express = require('express')
 const app = express()
-const https = require('https')
+const https = require('httpolyglot')
 const fs = require('fs')
 const mediasoup = require('mediasoup')
 const config = require('./config')
