@@ -382,7 +382,7 @@ class RoomClient {
       });
 
     // Create capture button if user is trainer
-    this.createCaptureButton()
+    // this.createCaptureButton()
 
   }
 
@@ -766,19 +766,19 @@ class RoomClient {
     )
 
     // Add event listener for producer state changes
-    this.socket.on(
-      'producerStateChanged',
-      function (data) {
-        if (data.state == 'closed') {
-          document.getElementById('poseDetectionButton').classList.add('hidden')
-        }
-        else {
-          document.getElementById('poseDetectionButton').classList.remove('hidden')
-        }
-        // Refresh the participants list
-        this.getParticipants()
-      }.bind(this)
-    )
+    // this.socket.on(
+    //   'producerStateChanged',
+    //   function (data) {
+    //     if (data.state == 'closed') {
+    //       document.getElementById('poseDetectionButton').classList.add('hidden')
+    //     }
+    //     else {
+    //       document.getElementById('poseDetectionButton').classList.remove('hidden')
+    //     }
+    //     // Refresh the participants list
+    //     this.getParticipants()
+    //   }.bind(this)
+    // )
 
     // Add event listener for being kicked from the room
     this.socket.on(
