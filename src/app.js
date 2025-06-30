@@ -37,7 +37,7 @@ app.get('/', (req, res) => {
 
 app.use(express.static(path.join(__dirname, '..', 'public')))
 
-app.get('/:username/:roomId/:isTrainer?', (req, res) => {
+app.get('/:roomId/:username?/:isTrainer?', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
