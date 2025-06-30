@@ -231,10 +231,11 @@
 
                 // Extract parameters based on URL structure
                 // Assuming URL structure: /username/roomId/isTrainer or /username/roomId
-                if (urlParts.length >= 2) {
-                    username = decodeURIComponent(urlParts[0]) || '';
+                if (urlParts.length >= 1) {
                     roomId = decodeURIComponent(urlParts[1]) || '';
-
+                    if (urlParts.length >= 2) {
+                        username = decodeURIComponent(urlParts[0]) || '';
+                    }
                     // Check for isTrainer parameter (can be '1', 'true', or any truthy value)
                     if (urlParts.length >= 3) {
                         // const trainerParam = urlParts[2].toLowerCase();
@@ -243,7 +244,8 @@
                 } else {
                     console.warn('URL does not contain expected parameters');
                 }
-
+                if(username){
+                    document.getElementById('nameInput').disabled = false;
                 // Also check URL search parameters as fallback
                 const urlParams = new URLSearchParams(window.location.search);
                 if (!username && urlParams.has('username')) {
