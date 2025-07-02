@@ -32,7 +32,7 @@ const roomList = new Map()
 const roomCapturedImages = new Map()
 
 app.get('/', (req, res) => {
-  res.send('This is not the video conferencing route. Please go to /vc');
+  res.send('This is not the video conferencing route. Please go to /:roomId');
 });
 
 app.use(express.static(path.join(__dirname, '..', 'public')))
