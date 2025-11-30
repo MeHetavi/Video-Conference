@@ -1,4 +1,10 @@
 const express = require('express')
+// Load environment variables from .env if present
+try {
+  require('dotenv').config()
+} catch {
+  // dotenv is optional; ignore if not installed
+}
 const app = express()
 const https = require('httpolyglot')
 const fs = require('fs')
@@ -34,6 +40,14 @@ const roomCapturedImages = new Map()
 app.get('/', (req, res) => {
   res.send('This is not the video conferencing route. Please go to /:roomId');
 });
+
+// Expose runtime configuration for the frontend via a small JS file
+app.get('/config.js', (req, res) => {
+  const apiBaseUrl = process.env.API_BASE_URL || 'http://prana.ycp.life/api/v1'
+  res.type('application/javascript').send(
+    `window.API_BASE_URL = '${apiBaseUrl.replace(/'/g, "\\'")}';\n`
+  )
+})
 
 app.use(express.static(path.join(__dirname, '..', 'public')))
 

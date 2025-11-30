@@ -37,156 +37,115 @@ async function joinRoom(name, room_id) {
     return;
   }
 
-  // Get trainer/owner status from API
+  // Get trainer/owner status from API when token is available.
+  // If no token, allow joining as a normal participant without blocking.
   let isTrainer = '0';
   let ownershipData = null;
 
-  try {
-    const token = localStorage.getItem('access_token') || getTokenFromURL();
-    if (!token) {
-      showErrorNotification('Authentication required. Please log in.');
-      return;
-    }
+  const token = localStorage.getItem('access_token') || getTokenFromURL();
 
-    // Get user_id from user profile
-    let user_id = null;
-    if (window.userProfile && window.userProfile.user_id) {
-      user_id = window.userProfile.user_id;
-    } else {
-      // Try to get from profile API if not available
-      const API_BASE_URL = 'http://10.254.167.80:8000/api/v1';
-      try {
-        const profileResponse = await fetch(`${API_BASE_URL}/me/profile`, {
+  if (token) {
+    try {
+      // Get user_id from user profile
+      let user_id = null;
+      if (window.userProfile && window.userProfile.user_id) {
+        user_id = window.userProfile.user_id;
+      } else {
+        // Try to get from profile API if not available
+        const API_BASE_URL = window.API_BASE_URL || 'http://prana.ycp.life/api/v1';
+        try {
+          const profileResponse = await fetch(`${API_BASE_URL}/me/profile`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            const profile = profileData.data?.user || profileData.data || profileData.user || profileData;
+            if (profile.user_id) {
+              user_id = profile.user_id;
+              window.userProfile = profile;
+            }
+          }
+        } catch (e) {
+          console.error('Error fetching user profile:', e);
+        }
+      }
+
+      if (user_id) {
+        const API_BASE_URL = window.API_BASE_URL || 'http://prana.ycp.life/api/v1';
+
+        // Check ownership to determine if user is trainer/owner
+        const ownershipResponse = await fetch(`${API_BASE_URL}/sessions/${room_id}/${user_id}/check-ownership`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
-        if (profileResponse.ok) {
-          const profileData = await profileResponse.json();
-          const profile = profileData.data?.user || profileData.data || profileData.user || profileData;
-          if (profile.user_id) {
-            user_id = profile.user_id;
-            window.userProfile = profile;
+
+        if (ownershipResponse.ok) {
+          const ownershipResult = await ownershipResponse.json();
+          ownershipData = ownershipResult.data || ownershipResult;
+
+          console.log('Ownership check response:', ownershipData.is_owner, ownershipData.is_trainer_owner, ownershipData.is_institute_owner);
+
+          // Determine trainer status from ownership data only
+          if (ownershipData.is_owner || ownershipData.is_trainer_owner || ownershipData.is_institute_owner) {
+            isTrainer = '1';
           }
-        }
-      } catch (e) {
-        console.error('Error fetching user profile:', e);
-      }
-    }
-
-    if (!user_id) {
-      showErrorNotification('Unable to get user information. Please try again.', 'Cannot Join Session');
-      return;
-    }
-
-    const API_BASE_URL = 'http://10.254.167.80:8000/api/v1';
-
-    // Check ownership to determine if user is trainer/owner
-    const ownershipResponse = await fetch(`${API_BASE_URL}/sessions/${room_id}/${user_id}/check-ownership`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!ownershipResponse.ok) {
-      showErrorNotification('Unable to verify session ownership. Please try again.', 'Cannot Join Session');
-      return;
-    }
-
-    const ownershipResult = await ownershipResponse.json();
-    ownershipData = ownershipResult.data || ownershipResult;
-
-    console.log('Ownership check response:', ownershipData.is_owner, ownershipData.is_trainer_owner, ownershipData.is_institute_owner);
-
-    // Determine trainer status from ownership data only
-    // User is a trainer if they are owner, trainer owner, or institute owner
-    if (ownershipData.is_owner || ownershipData.is_trainer_owner || ownershipData.is_institute_owner) {
-      isTrainer = '1';
-    } else {
-      isTrainer = '0';
-    }
-  } catch (error) {
-    console.error('Error checking ownership:', error);
-    showErrorNotification('Failed to verify session ownership. Please try again.', 'Cannot Join Session');
-    return;
-  }
-
-  // Do not override with window.roomConfig - use only ownership API data
-  console.log('Trainer status:', isTrainer, 'Ownership data:', ownershipData);
-
-  // If not a trainer, check if session is ongoing
-  if (isTrainer === '0' || isTrainer === false) {
-    try {
-      const token = localStorage.getItem('access_token') || getTokenFromURL();
-      if (!token) {
-        showErrorNotification('Authentication required. Please log in.');
-        return;
-      }
-
-      const API_BASE_URL = 'http://10.254.167.80:8000/api/v1';
-      const response = await fetch(`${API_BASE_URL}/session-occurrences/session/${room_id}/ongoing`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          showErrorNotification('Session is not currently ongoing. Please wait for the trainer to start the session.', 'Cannot Join Session');
         } else {
-          showErrorNotification('Unable to verify session status. Please try again.', 'Cannot Join Session');
+          console.warn('Unable to verify session ownership, continuing as participant.');
         }
-        return;
+      } else {
+        console.warn('Unable to get user information, continuing as participant.');
       }
-
-      const data = await response.json();
-      console.log('Session ongoing check response:', data);
-
-      // Check if session is not ongoing
-      // The API should return { data: { ongoing: true/false } } or similar structure
-      const isOngoing = data?.data?.ongoing === true || data?.ongoing === true;
-
-      if (!isOngoing) {
-        console.log('Session is not ongoing, showing error notification');
-        showErrorNotification('Session is not currently ongoing. Please wait for the trainer to start the session.', 'Cannot Join Session');
-        return;
-      }
-
-      console.log('Session is ongoing, proceeding with join');
-
-
-      // Check if there's actual data (not empty response)
-      // Also check if data has a success field and it's false
-      if (!data ||
-        (typeof data === 'object' && Object.keys(data).length === 0) ||
-        (data.success === false)) {
-        showErrorNotification('Session is not currently ongoing. Please wait for the trainer to start the session.', 'Cannot Join Session');
-        return;
-      }
-
-      // If we get here, session is ongoing, proceed with join
     } catch (error) {
-      console.error('Error checking session status:', error);
-      showErrorNotification('Failed to verify session status. Please try again.');
-      return;
+      console.error('Error checking ownership, continuing as participant:', error);
     }
-  }
 
-  // Store ownership data globally for use in RoomClient
-  if (ownershipData) {
-    window.sessionOwnership = ownershipData;
-  }
+    // If not a trainer and we have a token, optionally check if session is ongoing (best-effort).
+    if (isTrainer === '0' || isTrainer === false) {
+      try {
+        const API_BASE_URL = window.API_BASE_URL || 'http://prana.ycp.life/api/v1';
+        const response = await fetch(`${API_BASE_URL}/session-occurrences/session/${room_id}/ongoing`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-  // Update room config with ownership data
-  if (window.roomConfig) {
-    window.roomConfig.isTrainer = isTrainer === '1';
-    window.roomConfig.ownership = ownershipData;
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Session ongoing check response:', data);
+
+          const isOngoing = data?.data?.ongoing === true || data?.ongoing === true;
+          if (!isOngoing || !data || (typeof data === 'object' && Object.keys(data).length === 0) || data.success === false) {
+            console.warn('Session not reported as ongoing, but allowing join as requested.');
+          }
+        } else {
+          console.warn('Unable to verify session status, allowing join.');
+        }
+      } catch (error) {
+        console.error('Error checking session status, allowing join:', error);
+      }
+    }
+
+    // Store ownership data globally for use in RoomClient
+    if (ownershipData) {
+      window.sessionOwnership = ownershipData;
+    }
+
+    // Update room config with ownership data
+    if (window.roomConfig) {
+      window.roomConfig.isTrainer = isTrainer === '1';
+      window.roomConfig.ownership = ownershipData;
+    }
+  } else {
+    console.warn('No token found; joining room without ownership or status checks.');
   }
 
   // Proceed with joining the room

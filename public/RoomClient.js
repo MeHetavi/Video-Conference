@@ -584,7 +584,7 @@ class RoomClient {
       if (this.room_id && this._isOpen) {
         const token = localStorage.getItem('access_token');
         if (token) {
-          const API_BASE_URL = 'http://10.254.167.80:8000/api/v1';
+          const API_BASE_URL = window.API_BASE_URL || 'http://prana.ycp.life/api/v1';
           const endpoint = `${API_BASE_URL}/attendances/session/${this.room_id}/leave`;
 
           // Use fetch with keepalive for reliable tracking on page unload
@@ -693,10 +693,8 @@ class RoomClient {
             const profile = window.userProfile;
             if (profile.profile_pic) {
               // Get base URL - try multiple sources
-              let baseURL = 'http://10.254.167.80:8000/api/v1';
-              if (typeof window.API_BASE_URL !== 'undefined' && window.API_BASE_URL) {
-                baseURL = window.API_BASE_URL;
-              } else if (typeof window !== 'undefined' && window.location) {
+              let baseURL = window.API_BASE_URL || 'http://prana.ycp.life/api/v1';
+              if (!baseURL && typeof window !== 'undefined' && window.location) {
                 // Try to construct from current location
                 const protocol = window.location.protocol;
                 const hostname = window.location.hostname;
@@ -1073,7 +1071,7 @@ class RoomClient {
       }
 
       // Get API base URL
-      const API_BASE_URL = 'http://10.254.167.80:8000/api/v1';
+      const API_BASE_URL = window.API_BASE_URL || 'http://prana.ycp.life/api/v1';
 
       // Determine endpoint based on action
       const endpoint = action === 'join'
@@ -1107,10 +1105,8 @@ class RoomClient {
   setProfilePicture(placeholder, profilePic, name) {
     if (profilePic) {
       // Get base URL - try multiple sources
-      let baseURL = 'http://10.254.167.80:8000/api/v1';
-      if (typeof window.API_BASE_URL !== 'undefined' && window.API_BASE_URL) {
-        baseURL = window.API_BASE_URL;
-      } else if (typeof window !== 'undefined' && window.location) {
+      let baseURL = window.API_BASE_URL || 'http://prana.ycp.life/api/v1';
+      if (!baseURL && typeof window !== 'undefined' && window.location) {
         const protocol = window.location.protocol;
         const hostname = window.location.hostname;
         baseURL = `${protocol}//${hostname}:8000/api/v1`;

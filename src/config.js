@@ -62,10 +62,11 @@ let externalIp = getLocalIp();
 })();
 
 module.exports = {
-  listenIp: '0.0.0.0',
-  listenPort: 3016,
-  sslCrt: '../ssl/cert.pem',
-  sslKey: '../ssl/key.pem',
+  // Server listen configuration (can be overridden via environment)
+  listenIp: process.env.LISTEN_IP || '0.0.0.0',
+  listenPort: Number(process.env.LISTEN_PORT || 3016),
+  sslCrt: process.env.SSL_CRT_PATH || '../ssl/cert.pem',
+  sslKey: process.env.SSL_KEY_PATH || '../ssl/key.pem',
 
   mediasoup: {
     // Worker settings
@@ -106,8 +107,9 @@ module.exports = {
     webRtcTransport: {
       listenIps: [
         {
-          ip: '0.0.0.0',
-          announcedIp: '10.254.167.80' //'35.200.140.215' // This will be the external IP
+          ip: process.env.WEBRTC_LISTEN_IP || '34.100.140.55',
+          // External IP announced to clients (env or detected external IP)
+          announcedIp: process.env.MEDIASOUP_ANNOUNCED_IP || externalIp
         }
       ],
       maxIncomingBitrate: 1500000,
