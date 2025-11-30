@@ -372,7 +372,7 @@
 
     <div class="login-container relative z-10" id="loginContainer" style="z-index: 10;">
         <div class="login-blur" id="loginBlur">
-            <div id="login" class="w-full flex items-center justify-center mt-10 p-3">
+            <div id="login" class="w-full flex items-center justify-center mt-4 sm:mt-6 md:mt-10 p-2 sm:p-3">
 
                 <!-- Lobby layout -->
                 <div class="grid grid-cols-1 md:grid-cols-[1fr_480px] items-start w-full max-w-7xl mx-auto gap-4 md:gap-6">
@@ -388,61 +388,61 @@
                             </div>
                             <!-- Center message -->
                             <div id="lobbyPreviewCenterMsg"
-                                class="absolute inset-0 flex items-center justify-center text-white/90 text-xl">
+                                class="absolute inset-0 flex items-center justify-center text-white/90 text-base sm:text-lg md:text-xl px-4">
                                 Camera is starting
                             </div>
                             <!-- Bottom controls -->
                             <div
-                                class="absolute inset-x-0 bottom-0 pb-6 pt-12 bg-gradient-to-t from-black/60 to-transparent flex items-center justify-center gap-4">
+                                class="absolute inset-x-0 bottom-0 pb-4 sm:pb-6 pt-10 sm:pt-12 bg-gradient-to-t from-black/60 to-transparent flex items-center justify-center gap-3 sm:gap-4">
                                 <button id="lobbyMicToggle" type="button"
-                                    class="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
-                                    <i class="fa-solid fa-microphone"></i>
+                                    class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+                                    <i class="fa-solid fa-microphone text-sm sm:text-base"></i>
                                 </button>
                                 <button id="lobbyCamToggle" type="button"
-                                    class="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
-                                    <i class="fa-solid fa-video"></i>
+                                    class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+                                    <i class="fa-solid fa-video text-sm sm:text-base"></i>
                                 </button>
                             </div>
 
                         </div>
                         <!-- Bottom device selectors -->
-                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 items-center">
+                        <div class="mt-3 sm:mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 items-center">
                             <select id="lobbyMicSelect"
-                                class="w-full h-10 px-4 rounded-full bg-white/80 border border-white/40 text-[#3E2C1C] backdrop-blur min-w-0">
+                                class="w-full h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-white/80 border border-white/40 text-[#3E2C1C] backdrop-blur min-w-0 text-sm sm:text-base truncate">
                                 <option>Loading microphones…</option>
                             </select>
                             <select id="lobbySpeakerSelect"
-                                class="w-full h-10 px-4 rounded-full bg-white/80 border border-white/40 text-[#3E2C1C] backdrop-blur min-w-0">
+                                class="w-full h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-white/80 border border-white/40 text-[#3E2C1C] backdrop-blur min-w-0 text-sm sm:text-base truncate">
                                 <option>Loading speakers…</option>
                             </select>
                             <select id="lobbyCameraSelect"
-                                class="w-full h-10 px-4 rounded-full bg-white/80 border border-white/40 text-[#3E2C1C] backdrop-blur min-w-0">
+                                class="w-full h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-white/80 border border-white/40 text-[#3E2C1C] backdrop-blur min-w-0 text-sm sm:text-base truncate">
                                 <option>Loading cameras…</option>
                             </select>
                         </div>
                     </div>
                     <!-- Right: Join Panel -->
                     <div
-                        class="mx-auto mt-2 md:my-auto border border-white/30 text-center rounded-2xl w-full max-w-80 p-4 shadow-lg bg-white/60 modern-card">
-                        <div class="text-2xl font-semibold text-[#1B4332]">Ready to join?</div>
+                        class="mx-auto mt-2 md:my-auto border border-white/30 text-center rounded-2xl w-full max-w-80 p-3 sm:p-4 shadow-lg bg-white/60 modern-card">
+                        <div class="text-xl sm:text-2xl font-semibold text-[#1B4332]">Ready to join?</div>
                         <!-- User Profile Display -->
-                        <div id="userProfilePic" class="mt-4 flex justify-center items-center" style="display: none;">
+                        <div id="userProfilePic" class="mt-3 sm:mt-4 flex justify-center items-center" style="display: none;">
                         </div>
-                        <div id="usernameDisplay" class="mt-2 text-sm text-[#3E2C1C] font-medium"
+                        <div id="usernameDisplay" class="mt-1.5 sm:mt-2 text-xs sm:text-sm text-[#3E2C1C] font-medium"
                             style="display: none;"></div>
                         <!-- Original details moved to the join panel -->
-                        <div class="mt-6 space-y-2 text-start">
+                        <div class="mt-4 sm:mt-6 space-y-2 text-start">
                             <div class="hidden">
                                 <label for="roomidInput" class="text-sm text-[#3E2C1C]">Room ID</label>
                                 <input id="roomidInput" placeholder="Enter room ID" disabled type="text" />
                             </div>
-                            <label for="nameInput" class="text-md text-[#3E2C1C]">Name</label>
+                            <label for="nameInput" class="text-sm sm:text-md text-[#3E2C1C]">Name</label>
                             <br / />
                             <input id="nameInput" autofocus placeholder="Enter your name" disabled type="text"
-                                class="modern-input w-full px-4 py-2 rounded-lg ring-1 ring-[#6e36136c] focus:ring-2 focus:ring-[#1B4332] focus:border-transparent transition-all duration-200" />
+                                class="modern-input w-full px-3 sm:px-4 py-2 rounded-lg ring-1 ring-[#6e36136c] focus:ring-2 focus:ring-[#1B4332] focus:border-transparent transition-all duration-200 text-sm sm:text-base" />
                         </div>
-                        <div class="mt-6">
-                            <button id="joinButton" class="w-full bg-[#1B4332] text-white rounded-xl p-2"
+                        <div class="mt-4 sm:mt-6">
+                            <button id="joinButton" class="w-full bg-[#1B4332] text-white rounded-xl p-2.5 sm:p-2 text-sm sm:text-base font-medium"
                                 onclick="joinRoom(nameInput.value, roomidInput.value)">
                                 Join Now
                             </button>

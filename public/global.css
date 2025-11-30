@@ -56,6 +56,210 @@ body {
     }
 }
 
+/* Lobby screen responsive styles */
+@media (max-width: 640px) {
+    /* Login container adjustments */
+    #loginContainer {
+        padding: 0.5rem;
+    }
+
+    #login {
+        margin-top: 0.5rem !important;
+        padding: 0.5rem !important;
+    }
+
+    /* Lobby layout - ensure proper stacking */
+    #login > div {
+        gap: 1rem !important;
+    }
+
+    /* Video preview container */
+    #login .relative.rounded-2xl {
+        border-radius: 1rem;
+    }
+
+    /* Lobby video preview buttons - smaller on mobile */
+    #lobbyMicToggle,
+    #lobbyCamToggle {
+        width: 3rem !important;
+        height: 3rem !important;
+        min-width: 3rem !important;
+    }
+
+    /* Lobby video preview bottom controls */
+    #login .absolute.inset-x-0.bottom-0 {
+        gap: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+        padding-top: 2.5rem !important;
+    }
+
+    /* Lobby video preview center message */
+    #lobbyPreviewCenterMsg {
+        font-size: 1rem !important;
+        padding: 0 1rem;
+    }
+
+    /* Device selectors - better spacing and text handling */
+    #login .grid.grid-cols-1.sm\\:grid-cols-3 {
+        gap: 0.5rem !important;
+        margin-top: 0.75rem !important;
+    }
+
+    #lobbyMicSelect,
+    #lobbySpeakerSelect,
+    #lobbyCameraSelect {
+        height: 2.5rem !important;
+        padding: 0 0.75rem !important;
+        font-size: 0.875rem !important;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+        max-width: 100%;
+    }
+
+    /* Ensure select options are readable */
+    #lobbyMicSelect option,
+    #lobbySpeakerSelect option,
+    #lobbyCameraSelect option {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    /* Join panel - better mobile layout */
+    #login .max-w-80 {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin-top: 1rem !important;
+        padding: 1rem !important;
+    }
+
+    /* Join panel title */
+    #login .text-2xl {
+        font-size: 1.25rem !important;
+    }
+
+    /* User profile pic container */
+    #userProfilePic {
+        margin-top: 0.75rem !important;
+    }
+
+    #userProfilePic img,
+    #userProfilePic div {
+        width: 4rem !important;
+        height: 4rem !important;
+    }
+
+    /* Username display */
+    #usernameDisplay {
+        margin-top: 0.5rem !important;
+        font-size: 0.75rem !important;
+    }
+
+    /* Name input section */
+    #login .mt-6.space-y-2 {
+        margin-top: 1rem !important;
+    }
+
+    #nameInput {
+        font-size: 0.875rem !important;
+        padding: 0.5rem 0.75rem !important;
+    }
+
+    /* Join button */
+    #joinButton {
+        padding: 0.75rem !important;
+        font-size: 0.875rem !important;
+        margin-top: 1rem !important;
+    }
+
+    /* Top bar in video preview */
+    #login .absolute.inset-x-0.top-0 {
+        height: 2.5rem !important;
+        padding: 0 0.5rem !important;
+    }
+
+    #lobbyUserName {
+        font-size: 0.75rem !important;
+    }
+}
+
+/* Very small screens (up to 480px) */
+@media (max-width: 480px) {
+    #login {
+        padding: 0.25rem !important;
+    }
+
+    #login > div {
+        gap: 0.75rem !important;
+    }
+
+    /* Smaller video preview buttons */
+    #lobbyMicToggle,
+    #lobbyCamToggle {
+        width: 2.5rem !important;
+        height: 2.5rem !important;
+        min-width: 2.5rem !important;
+    }
+
+    #login .absolute.inset-x-0.bottom-0 {
+        gap: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+
+    /* Device selectors - single column on very small screens */
+    #login .grid.grid-cols-1.sm\\:grid-cols-3 {
+        grid-template-columns: 1fr !important;
+    }
+
+    #lobbyMicSelect,
+    #lobbySpeakerSelect,
+    #lobbyCameraSelect {
+        font-size: 0.8125rem !important;
+        padding: 0 0.5rem !important;
+        max-width: 100%;
+    }
+
+    /* Join panel - tighter spacing */
+    #login .max-w-80 {
+        padding: 0.75rem !important;
+    }
+
+    #login .text-2xl {
+        font-size: 1.125rem !important;
+    }
+
+    #userProfilePic img,
+    #userProfilePic div {
+        width: 3.5rem !important;
+        height: 3.5rem !important;
+    }
+
+    #nameInput {
+        font-size: 0.8125rem !important;
+        padding: 0.5rem !important;
+    }
+
+    #joinButton {
+        padding: 0.625rem !important;
+        font-size: 0.8125rem !important;
+    }
+}
+
+/* Tablet adjustments for lobby */
+@media (min-width: 641px) and (max-width: 768px) {
+    #lobbyMicToggle,
+    #lobbyCamToggle {
+        width: 3.25rem !important;
+        height: 3.25rem !important;
+    }
+
+    #lobbyMicSelect,
+    #lobbySpeakerSelect,
+    #lobbyCameraSelect {
+        font-size: 0.875rem !important;
+    }
+}
+
 #localMedia {
     display: flex;
     align-items: center;
@@ -298,7 +502,7 @@ body {
     }
 
     /* Adjust control bar height on mobile */
-    #control > div {
+    #control>div {
         height: 70px !important;
         padding: 0 8px;
         gap: 2px;
@@ -362,7 +566,7 @@ body {
         height: 48px !important;
     }
 
-    #control > div {
+    #control>div {
         gap: 3px;
     }
 }
@@ -441,7 +645,7 @@ body {
         min-width: 36px !important;
     }
 
-    #control > div {
+    #control>div {
         height: 60px !important;
         gap: 2px;
         padding: 0 4px;
