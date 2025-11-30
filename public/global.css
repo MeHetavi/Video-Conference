@@ -515,8 +515,10 @@ body {
         display: none !important;
     }
 
-    /* Video grid - allow 2 columns on mobile for better layout */
-    /* Note: JavaScript will control the exact grid layout based on participant count */
+    /* Video grid - single column on very small screens */
+    #remoteVideos {
+        grid-template-columns: 1fr !important;
+    }
 
     /* Participants panel - full width on mobile */
     .participants-panel {
@@ -606,8 +608,10 @@ body {
         padding: 4px;
     }
 
-    /* Note: JavaScript will control the exact grid layout based on participant count */
-    /* Don't force grid-template-columns here to allow dynamic layout */
+    /* Adjust grid for landscape - can fit more columns */
+    #remoteVideos {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
 }
 
 /* Very small screens (up to 480px) */
@@ -687,6 +691,7 @@ body {
 
 .unpinned-videos-sidebar::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
 }
 
 .unpinned-videos-sidebar::-webkit-scrollbar-track {
@@ -701,6 +706,25 @@ body {
 
 .unpinned-videos-sidebar::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.5);
+}
+
+/* Horizontal scrolling on mobile */
+@media (max-width: 640px) {
+    .unpinned-videos-sidebar {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+    }
+
+    .unpinned-videos-sidebar::-webkit-scrollbar {
+        height: 6px;
+        width: auto;
+    }
+
+    .unpinned-videos-sidebar .video-container {
+        scroll-snap-align: start;
+    }
 }
 
 /* Pinned videos area */
