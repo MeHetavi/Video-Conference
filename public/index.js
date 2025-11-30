@@ -187,6 +187,12 @@ async function joinRoom(name, room_id) {
   addListeners();
 }
 
+// Ensure joinRoom is available as a global for inline onclick handlers,
+// even when this file is bundled or wrapped by a module system.
+if (typeof window !== 'undefined') {
+  window.joinRoom = joinRoom;
+}
+
 // Helper function to get token from URL (if available)
 function getTokenFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
