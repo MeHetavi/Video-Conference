@@ -91,7 +91,7 @@
             }
 
             try {
-                const API_BASE_URL = 'http://prana.ycp.life/api/v1';
+                const API_BASE_URL = 'https://prana.ycp.life/api/v1';
                 const response = await fetch(`${API_BASE_URL}/me/profile`, {
                     method: 'GET',
                     headers: {
@@ -144,7 +144,7 @@
             // Display profile picture
             if (profilePicContainer) {
                 if (profile.profile_pic) {
-                    const baseURL = 'http://prana.ycp.life/api/v1';
+                    const baseURL = 'https://prana.ycp.life/api/v1';
                     const picUrl = profile.profile_pic.startsWith('http')
                         ? profile.profile_pic
                         : `${baseURL.replace('/api/v1', '')}/${profile.profile_pic}`;

@@ -43,7 +43,7 @@ app.get('/', (req, res) => {
 
 // Expose runtime configuration for the frontend via a small JS file
 app.get('/config.js', (req, res) => {
-  const apiBaseUrl = process.env.API_BASE_URL || 'http://prana.ycp.life/api/v1'
+  const apiBaseUrl = process.env.API_BASE_URL || 'https://prana.ycp.life/api/v1'
   res.type('application/javascript').send(
     `window.API_BASE_URL = '${apiBaseUrl.replace(/'/g, "\\'")}';\n`
   )

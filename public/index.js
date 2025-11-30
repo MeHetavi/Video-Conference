@@ -52,7 +52,7 @@ async function joinRoom(name, room_id) {
         user_id = window.userProfile.user_id;
       } else {
         // Try to get from profile API if not available
-        const API_BASE_URL = window.API_BASE_URL || 'http://prana.ycp.life/api/v1';
+        const API_BASE_URL = window.API_BASE_URL || 'https://prana.ycp.life/api/v1';
         try {
           const profileResponse = await fetch(`${API_BASE_URL}/me/profile`, {
             method: 'GET',
@@ -75,7 +75,7 @@ async function joinRoom(name, room_id) {
       }
 
       if (user_id) {
-        const API_BASE_URL = window.API_BASE_URL || 'http://prana.ycp.life/api/v1';
+        const API_BASE_URL = window.API_BASE_URL || 'https://prana.ycp.life/api/v1';
 
         // Check ownership to determine if user is trainer/owner
         const ownershipResponse = await fetch(`${API_BASE_URL}/sessions/${room_id}/${user_id}/check-ownership`, {
@@ -109,7 +109,7 @@ async function joinRoom(name, room_id) {
     // If not a trainer and we have a token, optionally check if session is ongoing (best-effort).
     if (isTrainer === '0' || isTrainer === false) {
       try {
-        const API_BASE_URL = window.API_BASE_URL || 'http://prana.ycp.life/api/v1';
+        const API_BASE_URL = window.API_BASE_URL || 'https://prana.ycp.life/api/v1';
         const response = await fetch(`${API_BASE_URL}/session-occurrences/session/${room_id}/ongoing`, {
           method: 'GET',
           headers: {
@@ -148,7 +148,7 @@ async function joinRoom(name, room_id) {
     console.warn('No token found; joining room as unauthenticated participant. Calling ongoing API without auth.');
 
     try {
-      const API_BASE_URL = window.API_BASE_URL || 'http://prana.ycp.life/api/v1';
+      const API_BASE_URL = window.API_BASE_URL || 'https://prana.ycp.life/api/v1';
       const response = await fetch(`${API_BASE_URL}/session-occurrences/session/${room_id}/ongoing`, {
         method: 'GET'
       });
