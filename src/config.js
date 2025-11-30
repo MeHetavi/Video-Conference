@@ -109,7 +109,7 @@ module.exports = {
         {
           ip: process.env.WEBRTC_LISTEN_IP || '0.0.0.0',
           // External IP announced to clients (env or detected external IP)
-          announcedIp: process.env.MEDIASOUP_ANNOUNCED_IP || externalIp
+          announcedIp: process.env.MEDIASOUP_ANNOUNCED_IP || "35.200.140.215"
         }
       ],
       maxIncomingBitrate: 1500000,

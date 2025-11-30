@@ -32,7 +32,6 @@ const participantsButton = document.getElementById('participantsButton');
 const toggleParticipantsBtn = document.getElementById('toggleParticipantsBtn');
 const participantsBadge = document.getElementById('participantsBadge');
 
-// Expose joinRoom globally so it can be used from inline onclick handlers in index.html
 async function joinRoom(name, room_id) {
   if (rc && rc.isOpen()) {
     return;
@@ -186,11 +185,6 @@ async function joinRoom(name, room_id) {
   );
 
   addListeners();
-}
-
-// Make joinRoom available on the global window object for inline handlers
-if (typeof window !== 'undefined') {
-  window.joinRoom = joinRoom;
 }
 
 // Helper function to get token from URL (if available)
