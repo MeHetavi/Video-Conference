@@ -1196,6 +1196,8 @@ class RoomClient {
         // Update container pinned state
         if (isPinned) {
           container.classList.add('pinned');
+        } else {
+          container.classList.remove('pinned');
         }
 
         container.appendChild(profilePicPlaceholder);
