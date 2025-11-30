@@ -149,11 +149,11 @@
                         ? profile.profile_pic
                         : `${baseURL.replace('/api/v1', '')}/${profile.profile_pic}`;
                     profilePicContainer.innerHTML = `<img src="${picUrl}" alt="${profile.name}" class="w-16 h-16 rounded-full object-cover border-2 border-[#1B4332]" />`;
-                    profilePicContainer.style.display = 'block';
+                    profilePicContainer.style.display = 'flex';
                 } else {
                     // Default avatar
                     profilePicContainer.innerHTML = `<div class="w-16 h-16 rounded-full bg-[#1B4332] flex items-center justify-center text-white text-xl font-semibold">${(profile.name || 'U').charAt(0).toUpperCase()}</div>`;
-                    profilePicContainer.style.display = 'block';
+                    profilePicContainer.style.display = 'flex';
                 }
             }
 

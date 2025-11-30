@@ -56,6 +56,21 @@ body {
     }
 }
 
+/* Lobby screen - Profile picture centering */
+#userProfilePic {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+#userProfilePic img,
+#userProfilePic div {
+    margin: 0 auto !important;
+}
+
 /* Lobby screen responsive styles */
 @media (max-width: 640px) {
     /* Login container adjustments */
@@ -141,12 +156,19 @@ body {
     /* User profile pic container */
     #userProfilePic {
         margin-top: 0.75rem !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
     }
 
     #userProfilePic img,
     #userProfilePic div {
         width: 4rem !important;
         height: 4rem !important;
+        margin: 0 auto !important;
     }
 
     /* Username display */
@@ -228,10 +250,20 @@ body {
         font-size: 1.125rem !important;
     }
 
+    #userProfilePic {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
     #userProfilePic img,
     #userProfilePic div {
         width: 3.5rem !important;
         height: 3.5rem !important;
+        margin: 0 auto !important;
     }
 
     #nameInput {
