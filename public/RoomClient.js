@@ -409,41 +409,22 @@ function updateLayout() {
       const sidebar = remoteContainer.querySelector('.unpinned-videos-sidebar');
       const pinnedArea = remoteContainer.querySelector('.pinned-videos-area');
 
-      // Move all tiles back to main container before removing sidebar/pinnedArea
+      // Collect all tiles that need to be moved back
+      const tilesToMove = [];
+      
       if (sidebar) {
         const sidebarTiles = Array.from(sidebar.querySelectorAll('.video-container'));
-        sidebarTiles.forEach(tile => {
-          // Reset styles before moving
-          tile.style.width = '';
-          tile.style.height = '';
-          tile.style.minHeight = '';
-          tile.style.maxHeight = '';
-          tile.style.aspectRatio = '';
-          tile.style.flexShrink = '';
-          tile.style.flex = '';
-          remoteContainer.appendChild(tile);
-        });
-        sidebar.remove();
+        tilesToMove.push(...sidebarTiles);
       }
 
       if (pinnedArea) {
-        // Move all tiles back to main container
-        const tiles = Array.from(pinnedArea.querySelectorAll('.video-container'));
-        tiles.forEach(tile => {
-          // Reset styles before moving
-          tile.style.width = '';
-          tile.style.height = '';
-          tile.style.minHeight = '';
-          tile.style.maxHeight = '';
-          tile.style.aspectRatio = '';
-          tile.style.flex = '';
-          remoteContainer.appendChild(tile);
-        });
-        pinnedArea.remove();
+        const pinnedTilesToMove = Array.from(pinnedArea.querySelectorAll('.video-container'));
+        tilesToMove.push(...pinnedTilesToMove);
       }
 
-      // Reset all tile styles before applying grid layout
-      remoteTiles.forEach(tile => {
+      // Move all tiles back to main container and reset their styles
+      tilesToMove.forEach(tile => {
+        // Reset all styles before moving
         tile.style.gridArea = '';
         tile.style.flex = '';
         tile.style.width = '';
@@ -452,9 +433,48 @@ function updateLayout() {
         tile.style.maxHeight = '';
         tile.style.aspectRatio = '';
         tile.style.flexShrink = '';
+        tile.style.maxWidth = '';
+        tile.style.minWidth = '';
+        remoteContainer.appendChild(tile);
       });
 
+      // Remove sidebar and pinned area
+      if (sidebar) {
+        sidebar.remove();
+      }
+      if (pinnedArea) {
+        pinnedArea.remove();
+      }
+
+      // Recalculate remoteTiles after moving (to include all tiles now in main container)
+      const allTilesAfterMove = Array.from(remoteContainer.querySelectorAll('.video-container'));
+      const remoteTilesAfterMove = allTilesAfterMove.filter(tile => {
+        const overlay = tile.querySelector('.video-overlay');
+        if (!overlay) return true;
+        const nameElement = overlay.querySelector('.video-name');
+        if (!nameElement) return true;
+        const youIndicator = overlay.querySelector('.you-indicator');
+        return !youIndicator && !nameElement.textContent.includes('(You)');
+      });
+
+      // Reset all tile styles before applying grid layout
+      remoteTilesAfterMove.forEach(tile => {
+        tile.style.gridArea = '';
+        tile.style.flex = '';
+        tile.style.width = '';
+        tile.style.height = '';
+        tile.style.minHeight = '';
+        tile.style.maxHeight = '';
+        tile.style.aspectRatio = '';
+        tile.style.flexShrink = '';
+        tile.style.maxWidth = '';
+        tile.style.minWidth = '';
+      });
+
+      // Reset container styles completely before applying grid
       remoteContainer.style.display = 'grid';
+      remoteContainer.style.flexDirection = '';
+      remoteContainer.style.flex = '';
       remoteContainer.style.gridTemplateColumns = `repeat(${gridColumns}, 1fr)`;
       remoteContainer.style.gridTemplateRows = `repeat(${gridRows}, 1fr)`;
       remoteContainer.style.gap = isMobile ? '4px' : (isTablet ? '6px' : '8px');
@@ -462,27 +482,26 @@ function updateLayout() {
       remoteContainer.style.width = '100%';
       remoteContainer.style.height = '100%';
       remoteContainer.style.minHeight = '0';
-      if (participantCount <= 16) {
-        remoteContainer.style.overflow = 'hidden';
-      }
+      remoteContainer.style.overflowX = 'hidden';
+      remoteContainer.style.overflowY = participantCount > 16 ? 'auto' : 'hidden';
 
       // Apply custom layout for 3 participants
-      if (useCustomLayout && remoteTiles.length === 3) {
+      if (useCustomLayout && remoteTilesAfterMove.length === 3) {
         if (isMobile) {
           // Mobile: 2 in first row, 1 in second row
-          remoteTiles[0].style.gridArea = '1 / 1 / 2 / 2'; // Top-left
-          remoteTiles[1].style.gridArea = '1 / 2 / 2 / 3'; // Top-right
-          remoteTiles[2].style.gridArea = '2 / 1 / 3 / 3'; // Bottom row, spans both columns
+          remoteTilesAfterMove[0].style.gridArea = '1 / 1 / 2 / 2'; // Top-left
+          remoteTilesAfterMove[1].style.gridArea = '1 / 2 / 2 / 3'; // Top-right
+          remoteTilesAfterMove[2].style.gridArea = '2 / 1 / 3 / 3'; // Bottom row, spans both columns
         } else {
           // Desktop: First two videos in left column (stacked), third video takes entire right column
-          remoteTiles[0].style.gridArea = '1 / 1 / 2 / 2'; // Top-left
-          remoteTiles[1].style.gridArea = '2 / 1 / 3 / 2'; // Bottom-left
-          remoteTiles[2].style.gridArea = '1 / 2 / 3 / 3'; // Full right column
+          remoteTilesAfterMove[0].style.gridArea = '1 / 1 / 2 / 2'; // Top-left
+          remoteTilesAfterMove[1].style.gridArea = '2 / 1 / 3 / 2'; // Bottom-left
+          remoteTilesAfterMove[2].style.gridArea = '1 / 2 / 3 / 3'; // Full right column
         }
       }
 
       // Apply default grid styles to all tiles
-      remoteTiles.forEach((tile, index) => {
+      remoteTilesAfterMove.forEach((tile, index) => {
         tile.style.width = '100%';
         tile.style.height = '100%';
         tile.style.minHeight = '0';
@@ -491,14 +510,14 @@ function updateLayout() {
         
         // For 3-video layout on mobile, the bottom video spans 2 columns
         // Remove aspect ratio constraint to let it fill the grid cell properly
-        if (useCustomLayout && remoteTiles.length === 3 && isMobile && index === 2) {
+        if (useCustomLayout && remoteTilesAfterMove.length === 3 && isMobile && index === 2) {
           // Bottom video: let grid cell determine size, video will use object-fit: contain
           tile.style.aspectRatio = '';
         } else {
           tile.style.aspectRatio = '16/9';
         }
         
-        if (!useCustomLayout || remoteTiles.length !== 3) {
+        if (!useCustomLayout || remoteTilesAfterMove.length !== 3) {
           tile.style.gridArea = '';
         }
       });
