@@ -148,12 +148,16 @@
                     const picUrl = profile.profile_pic.startsWith('http')
                         ? profile.profile_pic
                         : `${baseURL.replace('/api/v1', '')}/${profile.profile_pic}`;
-                    profilePicContainer.innerHTML = `<img src="${picUrl}" alt="${profile.name}" class="w-16 h-16 rounded-full object-cover border-2 border-[#1B4332]" />`;
-                    profilePicContainer.style.display = 'block';
+                    profilePicContainer.innerHTML = `<img src="${picUrl}" alt="${profile.name}" class="w-16 h-16 rounded-full object-cover border-2 border-[#1B4332] mx-auto" />`;
+                    profilePicContainer.style.display = 'flex';
+                    profilePicContainer.style.justifyContent = 'center';
+                    profilePicContainer.style.alignItems = 'center';
                 } else {
                     // Default avatar
-                    profilePicContainer.innerHTML = `<div class="w-16 h-16 rounded-full bg-[#1B4332] flex items-center justify-center text-white text-xl font-semibold">${(profile.name || 'U').charAt(0).toUpperCase()}</div>`;
-                    profilePicContainer.style.display = 'block';
+                    profilePicContainer.innerHTML = `<div class="w-16 h-16 rounded-full bg-[#1B4332] flex items-center justify-center text-white text-xl font-semibold mx-auto">${(profile.name || 'U').charAt(0).toUpperCase()}</div>`;
+                    profilePicContainer.style.display = 'flex';
+                    profilePicContainer.style.justifyContent = 'center';
+                    profilePicContainer.style.alignItems = 'center';
                 }
             }
 
@@ -372,7 +376,7 @@
 
     <div class="login-container relative z-10" id="loginContainer" style="z-index: 10;">
         <div class="login-blur" id="loginBlur">
-            <div id="login" class="w-full flex items-center justify-center mt-4 sm:mt-6 md:mt-10 p-2 sm:p-3">
+            <div id="login" class="w-full flex items-center justify-center p-2 sm:p-3 py-4 sm:py-6">
 
                 <!-- Lobby layout -->
                 <div class="grid grid-cols-1 md:grid-cols-[1fr_480px] items-start w-full max-w-7xl mx-auto gap-4 md:gap-6">
@@ -426,9 +430,9 @@
                         class="mx-auto mt-2 md:my-auto border border-white/30 text-center rounded-2xl w-full max-w-80 p-3 sm:p-4 shadow-lg bg-white/60 modern-card">
                         <div class="text-xl sm:text-2xl font-semibold text-[#1B4332]">Ready to join?</div>
                         <!-- User Profile Display -->
-                        <div id="userProfilePic" class="mt-3 sm:mt-4 flex justify-center items-center" style="display: none;">
+                        <div id="userProfilePic" class="mt-3 sm:mt-4 flex justify-center items-center mx-auto" style="display: none;">
                         </div>
-                        <div id="usernameDisplay" class="mt-1.5 sm:mt-2 text-xs sm:text-sm text-[#3E2C1C] font-medium"
+                        <div id="usernameDisplay" class="mt-1.5 sm:mt-2 text-xs sm:text-sm text-[#3E2C1C] font-medium text-center"
                             style="display: none;"></div>
                         <!-- Original details moved to the join panel -->
                         <div class="mt-4 sm:mt-6 space-y-2 text-start">
