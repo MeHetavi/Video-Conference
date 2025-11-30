@@ -248,78 +248,40 @@ async function roomOpen() {
         const deviceId = lobbySettings.audioDeviceId || (audioSelect && audioSelect.value ? audioSelect.value : null);
         try {
           await rc.produce(RoomClient.mediaType.audio, deviceId);
-          // Audio is ON - show ON button
-          hide(stopAudioButton);
-          reveal(startAudioButton);
-          if (startAudioButton) {
-            startAudioButton.classList.remove('bg-red-500/80', 'bg-white/10');
-            startAudioButton.classList.add('bg-green-500/80');
-          }
-        } catch (error) {
-          console.warn('Failed to start audio with lobby settings:', error);
-          // Audio failed to start - show OFF button
           hide(startAudioButton);
           reveal(stopAudioButton);
-          if (stopAudioButton) {
-            stopAudioButton.classList.remove('bg-green-500/80', 'bg-white/10');
-            stopAudioButton.classList.add('bg-red-500/80');
-          }
+        } catch (error) {
+          console.warn('Failed to start audio with lobby settings:', error);
+          reveal(startAudioButton);
+          hide(stopAudioButton);
         }
       } else {
-        // Audio is OFF - show OFF button
-        hide(startAudioButton);
-        reveal(stopAudioButton);
-        if (stopAudioButton) {
-          stopAudioButton.classList.remove('bg-green-500/80', 'bg-white/10');
-          stopAudioButton.classList.add('bg-red-500/80');
-        }
+        reveal(startAudioButton);
+        hide(stopAudioButton);
       }
 
       if (lobbySettings.camEnabled) {
         const deviceId = lobbySettings.videoDeviceId || (videoSelect && videoSelect.value ? videoSelect.value : null);
         try {
           await rc.produce(RoomClient.mediaType.video, deviceId);
-          // Video is ON - show ON button
-          hide(stopVideoButton);
-          reveal(startVideoButton);
-          if (startVideoButton) {
-            startVideoButton.classList.remove('bg-red-500/80', 'bg-white/10');
-            startVideoButton.classList.add('bg-green-500/80');
-          }
-        } catch (error) {
-          console.warn('Failed to start video with lobby settings:', error);
-          // Video failed to start - show OFF button
           hide(startVideoButton);
           reveal(stopVideoButton);
-          if (stopVideoButton) {
-            stopVideoButton.classList.remove('bg-green-500/80', 'bg-white/10');
-            stopVideoButton.classList.add('bg-red-500/80');
-          }
+        } catch (error) {
+          console.warn('Failed to start video with lobby settings:', error);
+          reveal(startVideoButton);
+          hide(stopVideoButton);
         }
       } else {
-        // Video is OFF - show OFF button
-        hide(startVideoButton);
-        reveal(stopVideoButton);
-        if (stopVideoButton) {
-          stopVideoButton.classList.remove('bg-green-500/80', 'bg-white/10');
-          stopVideoButton.classList.add('bg-red-500/80');
-        }
+        reveal(startVideoButton);
+        hide(stopVideoButton);
       }
     } catch (error) {
       console.error('Error applying lobby settings:', error);
-      // Fallback to default state if there's an error - both OFF
-      hide(startAudioButton);
-      reveal(stopAudioButton);
-      if (stopAudioButton) {
-        stopAudioButton.classList.remove('bg-green-500/80', 'bg-white/10');
-        stopAudioButton.classList.add('bg-red-500/80');
-      }
-      hide(startVideoButton);
-      reveal(stopVideoButton);
-      if (stopVideoButton) {
-        stopVideoButton.classList.remove('bg-green-500/80', 'bg-white/10');
-        stopVideoButton.classList.add('bg-red-500/80');
-      }
+      // Fallback to default state if there's an error
+      reveal(startAudioButton);
+      hide(stopAudioButton);
+      reveal(startVideoButton);
+      hide(stopVideoButton);
     }
   };
 
@@ -349,45 +311,21 @@ function addListeners() {
   })
 
   rc.on(RoomClient.EVENTS.stopAudio, () => {
-    // Audio is OFF - show OFF button (stopAudioButton with slash icon)
-    hide(startAudioButton)
-    reveal(stopAudioButton)
-    // Update styling to show inactive state
-    if (stopAudioButton) {
-      stopAudioButton.classList.remove('bg-green-500/80', 'bg-white/10')
-      stopAudioButton.classList.add('bg-red-500/80')
-    }
-  })
-  rc.on(RoomClient.EVENTS.startAudio, () => {
-    // Audio is ON - show ON button (startAudioButton with microphone icon)
     hide(stopAudioButton)
     reveal(startAudioButton)
-    // Update styling to show active state
-    if (startAudioButton) {
-      startAudioButton.classList.remove('bg-red-500/80', 'bg-white/10')
-      startAudioButton.classList.add('bg-green-500/80')
-    }
+  })
+  rc.on(RoomClient.EVENTS.startAudio, () => {
+    hide(startAudioButton)
+    reveal(stopAudioButton)
   })
 
   rc.on(RoomClient.EVENTS.startVideo, () => {
-    // Video is ON - show ON button (startVideoButton with video icon)
-    hide(stopVideoButton)
-    reveal(startVideoButton)
-    // Update styling to show active state
-    if (startVideoButton) {
-      startVideoButton.classList.remove('bg-red-500/80', 'bg-white/10')
-      startVideoButton.classList.add('bg-green-500/80')
-    }
-  })
-  rc.on(RoomClient.EVENTS.stopVideo, () => {
-    // Video is OFF - show OFF button (stopVideoButton with slash icon)
     hide(startVideoButton)
     reveal(stopVideoButton)
-    // Update styling to show inactive state
-    if (stopVideoButton) {
-      stopVideoButton.classList.remove('bg-green-500/80', 'bg-white/10')
-      stopVideoButton.classList.add('bg-red-500/80')
-    }
+  })
+  rc.on(RoomClient.EVENTS.stopVideo, () => {
+    hide(stopVideoButton)
+    reveal(startVideoButton)
   })
   rc.on(RoomClient.EVENTS.exitRoom, () => {
     hide(control)

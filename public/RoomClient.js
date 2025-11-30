@@ -68,7 +68,7 @@ function updateLayout() {
   let gridColumns = 1;
   let gridRows = 1;
   let useCustomLayout = false;
-  
+
   // Responsive column calculation based on screen size
   const getMaxColumns = () => {
     if (isMobile) {
@@ -192,35 +192,35 @@ function updateLayout() {
 
   // Apply grid layout
   if (participantCount > 0) {
-      // For small screens with more than 4 videos, automatically pin first video and show others horizontally
-      // Or if there are already pinned videos, use the pinned layout
-      if ((isMobile && participantCount > 4 && pinnedCount === 0) || pinnedCount > 0) {
-        // Auto-pin first video on mobile if more than 4 videos and no pinned videos
-        if (isMobile && participantCount > 4 && pinnedCount === 0) {
-          // Automatically pin the first video
-          if (remoteTiles.length > 0 && !remoteTiles[0].classList.contains('pinned')) {
-            remoteTiles[0].classList.add('pinned');
-            // Update pinned/unpinned arrays
-            pinnedTiles.push(remoteTiles[0]);
-            const index = unpinnedTiles.indexOf(remoteTiles[0]);
-            if (index > -1) {
-              unpinnedTiles.splice(index, 1);
-            }
-            // Update counts
-            pinnedCount = pinnedTiles.length;
-            unpinnedCount = unpinnedTiles.length;
+    // For small screens with more than 4 videos, automatically pin first video and show others horizontally
+    // Or if there are already pinned videos, use the pinned layout
+    if ((isMobile && participantCount > 4 && pinnedCount === 0) || pinnedCount > 0) {
+      // Auto-pin first video on mobile if more than 4 videos and no pinned videos
+      if (isMobile && participantCount > 4 && pinnedCount === 0) {
+        // Automatically pin the first video
+        if (remoteTiles.length > 0 && !remoteTiles[0].classList.contains('pinned')) {
+          remoteTiles[0].classList.add('pinned');
+          // Update pinned/unpinned arrays
+          pinnedTiles.push(remoteTiles[0]);
+          const index = unpinnedTiles.indexOf(remoteTiles[0]);
+          if (index > -1) {
+            unpinnedTiles.splice(index, 1);
           }
+          // Update counts
+          pinnedCount = pinnedTiles.length;
+          unpinnedCount = unpinnedTiles.length;
         }
-        // Create two-column layout: pinned video(s) on left, others in scrollable sidebar on right
-        // On mobile, stack vertically instead of horizontally
-        remoteContainer.style.display = 'flex';
-        remoteContainer.style.flexDirection = isMobile ? 'column' : 'row';
-        remoteContainer.style.gap = isMobile ? '4px' : '8px';
-        remoteContainer.style.padding = isMobile ? '4px' : '8px';
-        remoteContainer.style.width = '100%';
-        remoteContainer.style.height = '100%';
-        remoteContainer.style.minHeight = '0';
-        remoteContainer.style.overflow = 'hidden';
+      }
+      // Create two-column layout: pinned video(s) on left, others in scrollable sidebar on right
+      // On mobile, stack vertically instead of horizontally
+      remoteContainer.style.display = 'flex';
+      remoteContainer.style.flexDirection = isMobile ? 'column' : 'row';
+      remoteContainer.style.gap = isMobile ? '4px' : '8px';
+      remoteContainer.style.padding = isMobile ? '4px' : '8px';
+      remoteContainer.style.width = '100%';
+      remoteContainer.style.height = '100%';
+      remoteContainer.style.minHeight = '0';
+      remoteContainer.style.overflow = 'hidden';
 
       // Create main area for pinned video (only one can be pinned)
       let pinnedArea = remoteContainer.querySelector('.pinned-videos-area');
@@ -411,7 +411,7 @@ function updateLayout() {
 
       // Collect all tiles that need to be moved back
       const tilesToMove = [];
-      
+
       if (sidebar) {
         const sidebarTiles = Array.from(sidebar.querySelectorAll('.video-container'));
         tilesToMove.push(...sidebarTiles);
@@ -589,7 +589,7 @@ function updateLayout() {
         tile.style.minHeight = '0';
         tile.style.maxHeight = '';
         tile.style.flex = '';
-        
+
         // For 3-video layout on mobile, the bottom video spans 2 columns
         // Remove aspect ratio constraint to let it fill the grid cell properly
         if (actualUseCustomLayout && remoteTilesAfterMove.length === 3 && isMobile && index === 2) {
@@ -598,7 +598,7 @@ function updateLayout() {
         } else {
           tile.style.aspectRatio = '16/9';
         }
-        
+
         if (!actualUseCustomLayout || remoteTilesAfterMove.length !== 3) {
           tile.style.gridArea = '';
         }
