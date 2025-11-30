@@ -130,7 +130,8 @@ io.on('connection', (socket) => {
     const participants = peers.map(peer => ({
       socketId: peer.id,
       name: peer.name,
-      isTrainer: peer.isTrainer || false
+      isTrainer: peer.isTrainer || false,
+      profile_pic: peer.profile_pic || null
     }));
 
     // Check if the requesting user is a trainer
@@ -143,7 +144,7 @@ io.on('connection', (socket) => {
   })
 
 
-  socket.on('join', ({ room_id, name, isTrainer }, cb) => {
+  socket.on('join', ({ room_id, name, isTrainer, profile_pic }, cb) => {
     if (!roomList.has(room_id)) {
       return cb({
         error: 'Room does not exist'
@@ -153,8 +154,8 @@ io.on('connection', (socket) => {
     // Convert isTrainer to boolean
     const isTrainerBool = isTrainer === '1' || isTrainer === true;
 
-    // Add the peer with trainer status
-    roomList.get(room_id).addPeer(new Peer(socket.id, name, isTrainerBool));
+    // Add the peer with trainer status and profile picture
+    roomList.get(room_id).addPeer(new Peer(socket.id, name, isTrainerBool, profile_pic || null));
     socket.room_id = room_id;
 
     // Join the socket to the room
@@ -164,7 +165,8 @@ io.on('connection', (socket) => {
     socket.to(room_id).emit('newPeer', {
       peerId: socket.id,
       name: name,
-      isTrainer: isTrainerBool
+      isTrainer: isTrainerBool,
+      profile_pic: profile_pic || null
     });
 
     // Send all captured images to the new user

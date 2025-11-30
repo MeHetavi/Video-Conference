@@ -196,6 +196,7 @@ module.exports = class Room {
       id: peer.id,
       name: peer.name,
       isTrainer: peer.isTrainer,
+      profile_pic: peer.profile_pic || null,
       producers: Array.from(peer.producers.keys()),
       consumers: Array.from(peer.consumers.keys())
     }));

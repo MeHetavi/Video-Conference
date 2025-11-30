@@ -8,10 +8,11 @@ const options = {
   cert: fs.readFileSync(path.join(__dirname, config.sslCrt), 'utf-8')
 }
 module.exports = class Peer {
-  constructor(socket_id, name, isTrainer = false) {
+  constructor(socket_id, name, isTrainer = false, profile_pic = null) {
     this.id = socket_id
     this.name = name
     this.isTrainer = isTrainer
+    this.profile_pic = profile_pic
     this.transports = new Map()
     this.consumers = new Map()
     this.producers = new Map()

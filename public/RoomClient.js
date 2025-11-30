@@ -15,45 +15,335 @@ const _EVENTS = {
 }
 
 function updateLayout() {
-  const container = document.getElementById('remoteVideos');
-  const localVideo = document.getElementById('localMedia');
-  const localVideoContainer = localVideo.querySelector('.video-container');
-  const remoteTiles = Array.from(container.querySelectorAll('.video-container'));
+  const remoteContainer = document.getElementById('remoteVideos');
+  if (!remoteContainer) return;
 
-  // Move local video into the remote videos container if it's not already there
-  if (localVideoContainer && localVideoContainer.parentElement !== container) {
-    container.appendChild(localVideoContainer);
-  }
+  const localVideoContainer = document.getElementById('localMedia');
+  const localVideoTile = localVideoContainer ? localVideoContainer.querySelector('.video-container') : null;
+  const allTiles = Array.from(remoteContainer.querySelectorAll('.video-container'));
 
-  // Get all video tiles including local video
-  const tiles = Array.from(container.querySelectorAll('.video-container'));
-
-  // Reset any previous custom styles
-  tiles.forEach(tile => {
-    tile.style.gridArea = '';
-    tile.classList.remove('trainer-video', 'local-video', 'other-participant');
+  // Filter out local video tile from remote tiles (check for "You" indicator)
+  const remoteTiles = allTiles.filter(tile => {
+    const overlay = tile.querySelector('.video-overlay');
+    if (!overlay) return true;
+    const nameElement = overlay.querySelector('.video-name');
+    if (!nameElement) return true;
+    // Check if it's the local video by looking for "You" indicator
+    const youIndicator = overlay.querySelector('.you-indicator');
+    return !youIndicator && !nameElement.textContent.includes('(You)');
   });
 
-  // Clear container classes
-  container.classList.remove('trainer-layout', 'standard-layout');
+  // Separate pinned and unpinned videos
+  const pinnedTiles = remoteTiles.filter(tile => tile.classList.contains('pinned'));
+  const unpinnedTiles = remoteTiles.filter(tile => !tile.classList.contains('pinned'));
 
-  // Get current user's trainer status
-  const currentUserIsTrainer = this.isTrainer;
-
-  if (currentUserIsTrainer == 0) {
-    // Special layout for non-trainers
-    setupNonTrainerLayout(container, tiles);
-  } else {
-    // Standard layout for trainers
-    setupStandardLayout(container, tiles);
+  // Ensure local video stays in localMedia container (don't move it to remote container)
+  if (localVideoTile && localVideoContainer && localVideoTile.parentElement !== localVideoContainer) {
+    localVideoContainer.appendChild(localVideoTile);
   }
+
+  // Style local video as small overlay in bottom-right (Google Meet style)
+  if (localVideoTile) {
+    localVideoTile.style.width = '100%';
+    localVideoTile.style.height = '100%';
+    localVideoTile.style.aspectRatio = '16/9';
+    localVideoTile.style.borderRadius = '12px';
+    localVideoTile.style.overflow = 'hidden';
+    localVideoTile.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+    localVideoTile.style.position = 'relative';
+  }
+
+  // Calculate grid layout based on number of remote participants (Google Meet style)
+  // Optimize to minimize empty spaces
+  // If there are pinned videos, show them prominently at the top
+  const participantCount = remoteTiles.length;
+  const pinnedCount = pinnedTiles.length;
+  const unpinnedCount = unpinnedTiles.length;
+  let gridColumns = 1;
+  let gridRows = 1;
+  let useCustomLayout = false;
+
+  if (participantCount === 0) {
+    // No remote participants - show empty grid, local video will be in overlay
+    gridColumns = 1;
+    gridRows = 1;
+    remoteContainer.style.display = 'grid';
+    remoteContainer.style.gridTemplateColumns = '1fr';
+    remoteContainer.style.gridTemplateRows = '1fr';
+    remoteContainer.style.gap = '8px';
+    remoteContainer.style.padding = '8px';
+    remoteContainer.style.width = '100%';
+    remoteContainer.style.height = '100%';
+    remoteContainer.style.minHeight = '0';
+    remoteContainer.style.overflow = 'hidden';
+  } else if (participantCount === 1) {
+    gridColumns = 1;
+    gridRows = 1;
+  } else if (participantCount === 2) {
+    gridColumns = 2;
+    gridRows = 1;
+  } else if (participantCount === 3) {
+    // Special layout: 2 videos in one column (2 rows), 1 video in entire column
+    useCustomLayout = true;
+    gridColumns = 2;
+    gridRows = 2;
+  } else if (participantCount === 4) {
+    gridColumns = 2;
+    gridRows = 2;
+  } else if (participantCount === 5) {
+    // Optimized: 3 videos in first row, 2 videos in second row
+    gridColumns = 3;
+    gridRows = 2;
+  } else if (participantCount === 6) {
+    gridColumns = 3;
+    gridRows = 2;
+  } else if (participantCount === 7) {
+    // Optimized: 4 videos in first row, 3 videos in second row
+    gridColumns = 4;
+    gridRows = 2;
+  } else if (participantCount === 8) {
+    gridColumns = 4;
+    gridRows = 2;
+  } else if (participantCount === 9) {
+    gridColumns = 3;
+    gridRows = 3;
+  } else if (participantCount === 10) {
+    // Optimized: 4 videos in first row, 3 videos in second row, 3 videos in third row
+    gridColumns = 4;
+    gridRows = 3;
+  } else if (participantCount === 11) {
+    // Optimized: 4 videos in first row, 4 videos in second row, 3 videos in third row
+    gridColumns = 4;
+    gridRows = 3;
+  } else if (participantCount === 12) {
+    gridColumns = 4;
+    gridRows = 3;
+  } else if (participantCount === 13) {
+    // Optimized: 4 videos per row for first 3 rows, 1 video in fourth row
+    gridColumns = 4;
+    gridRows = 4;
+  } else if (participantCount === 14) {
+    // Optimized: 4 videos per row for first 3 rows, 2 videos in fourth row
+    gridColumns = 4;
+    gridRows = 4;
+  } else if (participantCount === 15) {
+    // Optimized: 4 videos per row for first 3 rows, 3 videos in fourth row
+    gridColumns = 4;
+    gridRows = 4;
+  } else if (participantCount === 16) {
+    gridColumns = 4;
+    gridRows = 4;
+  } else {
+    // For more than 16, use a scrollable grid with 4 columns
+    gridColumns = 4;
+    gridRows = Math.ceil(participantCount / 4);
+    remoteContainer.style.overflowY = 'auto';
+    remoteContainer.style.maxHeight = 'calc(100vh - 100px)';
+  }
+
+  // Apply grid layout
+  if (participantCount > 0) {
+    // If there are pinned videos, create a special layout with sidebar
+    if (pinnedCount > 0) {
+      // Create two-column layout: pinned video(s) on left, others in scrollable sidebar on right
+      remoteContainer.style.display = 'flex';
+      remoteContainer.style.flexDirection = 'row';
+      remoteContainer.style.gap = '8px';
+      remoteContainer.style.padding = '8px';
+      remoteContainer.style.width = '100%';
+      remoteContainer.style.height = '100%';
+      remoteContainer.style.minHeight = '0';
+      remoteContainer.style.overflow = 'hidden';
+
+      // Create main area for pinned video (only one can be pinned)
+      let pinnedArea = remoteContainer.querySelector('.pinned-videos-area');
+      if (!pinnedArea) {
+        pinnedArea = document.createElement('div');
+        pinnedArea.className = 'pinned-videos-area';
+        pinnedArea.style.flex = '1';
+        pinnedArea.style.minWidth = '0';
+        pinnedArea.style.display = 'flex';
+        pinnedArea.style.flexDirection = 'column';
+        pinnedArea.style.gap = '8px';
+        pinnedArea.style.overflow = 'hidden';
+        remoteContainer.appendChild(pinnedArea);
+      } else {
+        pinnedArea.style.flexDirection = 'column';
+      }
+
+      // Reset all tiles first to clear any previous layout styles
+      remoteTiles.forEach(tile => {
+        tile.style.gridArea = '';
+        tile.style.flex = '';
+        tile.style.width = '';
+        tile.style.height = '';
+        tile.style.minHeight = '';
+        tile.style.maxHeight = '';
+        tile.style.aspectRatio = '';
+        tile.style.flexShrink = '';
+      });
+
+      // Clear and add pinned video to main area (only first one if multiple somehow)
+      pinnedArea.innerHTML = '';
+      if (pinnedTiles.length > 0) {
+        const pinnedTile = pinnedTiles[0]; // Only take the first pinned video
+        // Reset styles first
+        pinnedTile.style.gridArea = '';
+        pinnedTile.style.flex = '';
+        pinnedTile.style.width = '100%';
+        pinnedTile.style.height = '100%';
+        pinnedTile.style.minHeight = '0';
+        pinnedTile.style.maxHeight = '';
+        pinnedTile.style.aspectRatio = '';
+        pinnedTile.style.flex = '1';
+        pinnedArea.appendChild(pinnedTile);
+      }
+
+      // Create sidebar for unpinned videos
+      let sidebar = remoteContainer.querySelector('.unpinned-videos-sidebar');
+      if (!sidebar) {
+        sidebar = document.createElement('div');
+        sidebar.className = 'unpinned-videos-sidebar';
+        sidebar.style.width = '300px';
+        sidebar.style.minWidth = '250px';
+        sidebar.style.maxWidth = '400px';
+        sidebar.style.display = 'flex';
+        sidebar.style.flexDirection = 'column';
+        sidebar.style.gap = '8px';
+        sidebar.style.overflowY = 'auto';
+        sidebar.style.overflowX = 'hidden';
+        sidebar.style.borderLeft = '1px solid rgba(255, 255, 255, 0.2)';
+        sidebar.style.paddingLeft = '8px';
+        remoteContainer.appendChild(sidebar);
+      }
+
+      // Clear and add ALL unpinned videos to sidebar (including previously pinned ones)
+      sidebar.innerHTML = '';
+      unpinnedTiles.forEach(tile => {
+        // Reset all styles first
+        tile.style.gridArea = '';
+        tile.style.flex = '';
+        tile.style.width = '100%';
+        tile.style.aspectRatio = '16/9';
+        tile.style.minHeight = '150px';
+        tile.style.maxHeight = '250px';
+        tile.style.flexShrink = '0';
+        tile.style.height = '';
+        sidebar.appendChild(tile);
+      });
+
+      // Show/hide sidebar based on whether there are unpinned videos
+      if (unpinnedCount === 0) {
+        sidebar.style.display = 'none';
+      } else {
+        sidebar.style.display = 'flex';
+      }
+    } else {
+      // No pinned videos, use standard grid layout
+      // Remove any sidebar elements if they exist
+      const sidebar = remoteContainer.querySelector('.unpinned-videos-sidebar');
+      const pinnedArea = remoteContainer.querySelector('.pinned-videos-area');
+
+      // Move all tiles back to main container before removing sidebar/pinnedArea
+      if (sidebar) {
+        const sidebarTiles = Array.from(sidebar.querySelectorAll('.video-container'));
+        sidebarTiles.forEach(tile => {
+          // Reset styles before moving
+          tile.style.width = '';
+          tile.style.height = '';
+          tile.style.minHeight = '';
+          tile.style.maxHeight = '';
+          tile.style.aspectRatio = '';
+          tile.style.flexShrink = '';
+          tile.style.flex = '';
+          remoteContainer.appendChild(tile);
+        });
+        sidebar.remove();
+      }
+
+      if (pinnedArea) {
+        // Move all tiles back to main container
+        const tiles = Array.from(pinnedArea.querySelectorAll('.video-container'));
+        tiles.forEach(tile => {
+          // Reset styles before moving
+          tile.style.width = '';
+          tile.style.height = '';
+          tile.style.minHeight = '';
+          tile.style.maxHeight = '';
+          tile.style.aspectRatio = '';
+          tile.style.flex = '';
+          remoteContainer.appendChild(tile);
+        });
+        pinnedArea.remove();
+      }
+
+      // Reset all tile styles before applying grid layout
+      remoteTiles.forEach(tile => {
+        tile.style.gridArea = '';
+        tile.style.flex = '';
+        tile.style.width = '';
+        tile.style.height = '';
+        tile.style.minHeight = '';
+        tile.style.maxHeight = '';
+        tile.style.aspectRatio = '';
+        tile.style.flexShrink = '';
+      });
+
+      remoteContainer.style.display = 'grid';
+      remoteContainer.style.gridTemplateColumns = `repeat(${gridColumns}, 1fr)`;
+      remoteContainer.style.gridTemplateRows = `repeat(${gridRows}, 1fr)`;
+      remoteContainer.style.gap = '8px';
+      remoteContainer.style.padding = '8px';
+      remoteContainer.style.width = '100%';
+      remoteContainer.style.height = '100%';
+      remoteContainer.style.minHeight = '0';
+      if (participantCount <= 16) {
+        remoteContainer.style.overflow = 'hidden';
+      }
+
+      // Apply custom layout for 3 participants
+      if (useCustomLayout && remoteTiles.length === 3) {
+        // First two videos in left column (stacked)
+        remoteTiles[0].style.gridArea = '1 / 1 / 2 / 2'; // Top-left
+        remoteTiles[1].style.gridArea = '2 / 1 / 3 / 2'; // Bottom-left
+        // Third video takes entire right column
+        remoteTiles[2].style.gridArea = '1 / 2 / 3 / 3'; // Full right column
+      }
+
+      // Apply default grid styles to all tiles
+      remoteTiles.forEach(tile => {
+        tile.style.width = '100%';
+        tile.style.height = '100%';
+        tile.style.aspectRatio = '16/9';
+        tile.style.minHeight = '0';
+        tile.style.maxHeight = '';
+        if (!useCustomLayout || remoteTiles.length !== 3) {
+          tile.style.gridArea = '';
+        }
+        tile.style.flex = '';
+      });
+    }
+  }
+
+  // Style each remote video tile with base styles
+  // Layout-specific styles (width, height, aspectRatio) are set in the pinned/unpinned sections above
+  remoteTiles.forEach(tile => {
+    // Always apply base styles
+    tile.style.borderRadius = '12px';
+    tile.style.overflow = 'hidden';
+    tile.style.position = 'relative';
+    tile.style.backgroundColor = '#1B4332';
+
+    // Layout-specific styles are already set in the pinned/unpinned sections above
+    // Don't override them here
+  });
 
   // Explicitly set the height of the video container to ensure it stays above controls
   const controlHeight = 80; // Fixed control height
-  document.getElementById('videoMedia').style.height = `calc(100vh - ${controlHeight}px)`;
-
-  // Ensure the remote videos container respects this boundary
-  container.style.maxHeight = `calc(100vh - ${controlHeight}px)`;
+  const videoMedia = document.getElementById('videoMedia');
+  if (videoMedia) {
+    videoMedia.style.height = `calc(100vh - ${controlHeight}px)`;
+  }
 }
 
 function setupNonTrainerLayout(container, tiles) {
@@ -228,6 +518,8 @@ function setupGridLayout(container, tiles) {
 
 class RoomClient {
   constructor(localMediaEl, remoteVideoEl, remoteAudioEl, mediasoupClient, socket, room_id, name, successCallback, isTrainer = '0') {
+    // Track pinned videos (socketId -> boolean)
+    this.pinnedVideos = new Map();
     this.name = name
     this.localMediaEl = localMediaEl
     this.remoteVideoEl = remoteVideoEl
@@ -243,6 +535,7 @@ class RoomClient {
     this.consumers = new Map()
     this.producers = new Map()
     this.participants = []
+    this.participantContainers = new Map() // Map socketId to container element
     this.getParticipants()
     /**
      * map that contains a mediatype as key and producer_id as value
@@ -286,6 +579,29 @@ class RoomClient {
 
     this.initPoseComparison()
 
+    // Track attendance on page unload (browser close/navigation)
+    this.beforeUnloadHandler = (event) => {
+      if (this.room_id && this._isOpen) {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+          const API_BASE_URL = 'http://10.254.167.80:8000/api/v1';
+          const endpoint = `${API_BASE_URL}/attendances/session/${this.room_id}/leave`;
+
+          // Use fetch with keepalive for reliable tracking on page unload
+          // keepalive ensures the request continues even after page unload
+          fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            keepalive: true
+          }).catch(() => { }); // Ignore errors on unload
+        }
+      }
+    };
+    window.addEventListener('beforeunload', this.beforeUnloadHandler);
+
     this.createRoom(room_id).then(
       async function () {
         await this.join(name, room_id, isTrainer)
@@ -312,11 +628,23 @@ class RoomClient {
   }
 
   async join(name, room_id, isTrainer) {
+    // Get profile picture from user profile if available
+    let profile_pic = null;
+    if (window.userProfile && window.userProfile.profile_pic) {
+      profile_pic = window.userProfile.profile_pic;
+    }
+
+    // Track attendance - join session
+    this.trackAttendance(room_id, 'join').catch(err => {
+      console.error('Failed to track attendance (join):', err);
+    });
+
     socket
       .request('join', {
         name,
         room_id,
-        isTrainer
+        isTrainer,
+        profile_pic
       })
       .then(
         async function (e) {
@@ -324,6 +652,13 @@ class RoomClient {
           const container = document.createElement('div');
           container.className = 'video-container';
           container.id = `container-local-${socket.id}`;
+          container.style.position = 'relative';
+          container.style.width = '100%';
+          container.style.height = '100%';
+          container.style.display = 'flex';
+          container.style.alignItems = 'center';
+          container.style.justifyContent = 'center';
+          container.style.backgroundColor = '#1B4332';
 
           // Create the video element
           const video = document.createElement('video');
@@ -331,10 +666,77 @@ class RoomClient {
           video.playsInline = true;
           video.id = socket.id;
           video.className = 'vid';
+          video.style.width = '100%';
+          video.style.height = '100%';
+          video.style.objectFit = 'contain';
+          video.style.display = 'none'; // Initially hidden until video starts
+          video.style.pointerEvents = 'none'; // Allow clicks to pass through to container
+
+          // Create profile picture placeholder (shown when video is off)
+          const profilePicPlaceholder = document.createElement('div');
+          profilePicPlaceholder.className = 'profile-pic-placeholder';
+          profilePicPlaceholder.id = `profile-pic-${socket.id}`;
+          profilePicPlaceholder.style.width = '100%';
+          profilePicPlaceholder.style.height = '100%';
+          profilePicPlaceholder.style.display = 'flex';
+          profilePicPlaceholder.style.alignItems = 'center';
+          profilePicPlaceholder.style.justifyContent = 'center';
+          profilePicPlaceholder.style.position = 'absolute';
+          profilePicPlaceholder.style.top = '0';
+          profilePicPlaceholder.style.left = '0';
+          profilePicPlaceholder.style.right = '0';
+          profilePicPlaceholder.style.bottom = '0';
+          profilePicPlaceholder.style.zIndex = '1';
+
+          // Set profile picture if available
+          if (window.userProfile) {
+            const profile = window.userProfile;
+            if (profile.profile_pic) {
+              // Get base URL - try multiple sources
+              let baseURL = 'http://10.254.167.80:8000/api/v1';
+              if (typeof window.API_BASE_URL !== 'undefined' && window.API_BASE_URL) {
+                baseURL = window.API_BASE_URL;
+              } else if (typeof window !== 'undefined' && window.location) {
+                // Try to construct from current location
+                const protocol = window.location.protocol;
+                const hostname = window.location.hostname;
+                baseURL = `${protocol}//${hostname}:8000/api/v1`;
+              }
+              const picUrl = profile.profile_pic.startsWith('http')
+                ? profile.profile_pic
+                : `${baseURL.replace('/api/v1', '')}/${profile.profile_pic}`;
+              profilePicPlaceholder.innerHTML = `
+                <img src="${picUrl}" alt="${profile.name || 'User'}" 
+                     style="width: 200px; height: 200px; border-radius: 50%; object-fit: cover; border: 4px solid white;" />
+              `;
+            } else {
+              // Default avatar with first letter
+              const initial = (profile.name || 'U').charAt(0).toUpperCase();
+              profilePicPlaceholder.innerHTML = `
+                <div style="width: 200px; height: 200px; border-radius: 50%; background-color: #95D5B2; 
+                            display: flex; align-items: center; justify-content: center; 
+                            color: white; font-size: 72px; font-weight: bold; border: 4px solid white;">
+                  ${initial}
+                </div>
+              `;
+            }
+          } else {
+            // Default avatar if no profile - use name from join if available
+            const userName = name || 'U';
+            const initial = userName.charAt(0).toUpperCase();
+            profilePicPlaceholder.innerHTML = `
+              <div style="width: 200px; height: 200px; border-radius: 50%; background-color: #95D5B2; 
+                          display: flex; align-items: center; justify-content: center; 
+                          color: white; font-size: 72px; font-weight: bold; border: 4px solid white;">
+                ${initial}
+              </div>
+            `;
+          }
 
           // Create an overlay for the name and trainer tag
           const overlay = document.createElement('div');
           overlay.className = 'video-overlay';
+          overlay.style.zIndex = '2';
 
           // Set the overlay content
           overlay.innerHTML = `
@@ -344,12 +746,13 @@ class RoomClient {
             </div>
           `;
 
-          // Add the video and overlay to the container
+          // Add elements to the container
+          container.appendChild(profilePicPlaceholder);
           container.appendChild(video);
           container.appendChild(overlay);
 
-          // Add the container to the remote videos container
-          document.getElementById('remoteVideos').appendChild(container);
+          // Add the container to the local media container
+          document.getElementById('localMedia').appendChild(container);
 
           try {
             const data = await this.socket.request('getRouterRtpCapabilities');
@@ -438,8 +841,21 @@ class RoomClient {
 
     // Update the count
     if (participantsCount) {
-      participantsCount.textContent = `${this.participants.length} users`;
+      const total = this.participants.length;
+      const label = total === 1 ? 'user' : 'users';
+      participantsCount.textContent = `${total} ${label}`;
     }
+
+    const participantsBadge = document.getElementById('participantsBadge');
+    if (participantsBadge) {
+      const total = this.participants.length;
+      participantsBadge.textContent = String(total);
+      participantsBadge.classList.toggle('hidden', total === 0);
+      participantsBadge.setAttribute('aria-hidden', total === 0 ? 'true' : 'false');
+    }
+
+    // Create/update containers for all participants (except local user)
+    this.createParticipantContainers();
 
 
     // Create participant items
@@ -471,11 +887,12 @@ class RoomClient {
         </div>
       `;
 
-      // Add remove button if current user is trainer and this is not another trainer
-      if (this.isTrainer && !isCurrentUser && !participant.isTrainer) {
+      // Add remove button if current user is trainer and this is not themselves
+      // Trainers can remove any user (including other trainers)
+      if (this.isTrainer && !isCurrentUser) {
         participantHTML += `
           <div class="participant-actions">
-            <button class="action-btn remove" data-peer-id="${participant.socketId}">
+            <button class="action-btn remove" data-peer-id="${participant.socketId}" title="Remove ${participant.name}">
               <i class="fas fa-times"></i>
             </button>
           </div>
@@ -486,11 +903,18 @@ class RoomClient {
       participantsList.appendChild(participantItem);
 
       // Add event listener to remove button
-      if (this.isTrainer && !isCurrentUser && !participant.isTrainer) {
+      if (this.isTrainer && !isCurrentUser) {
         const removeBtn = participantItem.querySelector('.remove');
         if (removeBtn) {
           removeBtn.addEventListener('click', () => {
-            this.kickParticipant(participant.socketId);
+            showConfirmModal(
+              'Remove Participant',
+              `Are you sure you want to remove ${participant.name} from the session?`,
+              () => {
+                this.kickParticipant(participant.socketId);
+                closeConfirmModal();
+              }
+            );
           });
         }
       }
@@ -502,6 +926,213 @@ class RoomClient {
 
     if (participantsButton) participantsButton.classList.remove('hidden');
     if (toggleParticipantsBtn) toggleParticipantsBtn.classList.remove('hidden');
+  }
+
+  // Create containers for all participants (showing profile pic if no video)
+  createParticipantContainers() {
+    if (!this.participants || this.participants.length === 0) {
+      return;
+    }
+
+    const remoteVideosContainer = document.getElementById('remoteVideos');
+    if (!remoteVideosContainer) {
+      return;
+    }
+
+    // Create containers for all remote participants (not local user)
+    this.participants.forEach(participant => {
+      // Skip local user - they have their own container
+      if (participant.socketId === this.socket.id) {
+        return;
+      }
+
+      // Check if container already exists
+      let container = this.participantContainers.get(participant.socketId);
+
+      if (!container) {
+        // Create new container
+        container = document.createElement('div');
+        container.className = 'video-container';
+        container.id = `container-participant-${participant.socketId}`;
+        container.dataset.socketId = participant.socketId;
+        container.style.position = 'relative';
+        container.style.width = '100%';
+        container.style.height = '100%';
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
+        container.style.backgroundColor = '#1B4332';
+
+        // Create profile picture placeholder
+        const profilePicPlaceholder = document.createElement('div');
+        profilePicPlaceholder.className = 'profile-pic-placeholder';
+        profilePicPlaceholder.id = `profile-pic-participant-${participant.socketId}`;
+        profilePicPlaceholder.style.width = '100%';
+        profilePicPlaceholder.style.height = '100%';
+        profilePicPlaceholder.style.display = 'flex';
+        profilePicPlaceholder.style.alignItems = 'center';
+        profilePicPlaceholder.style.justifyContent = 'center';
+        profilePicPlaceholder.style.position = 'absolute';
+        profilePicPlaceholder.style.top = '0';
+        profilePicPlaceholder.style.left = '0';
+        profilePicPlaceholder.style.right = '0';
+        profilePicPlaceholder.style.bottom = '0';
+        profilePicPlaceholder.style.zIndex = '1';
+
+        // Set profile picture
+        this.setProfilePicture(profilePicPlaceholder, participant.profile_pic, participant.name);
+
+        // Create overlay for name and trainer tag
+        const overlay = document.createElement('div');
+        overlay.className = 'video-overlay';
+        overlay.style.zIndex = '2';
+        const isPinned = this.pinnedVideos.get(participant.socketId) || false;
+        overlay.innerHTML = `
+          <div class="video-info">
+            <span class="video-name">${participant.name}</span>
+            ${participant.isTrainer ? '<span class="video-trainer-badge">Trainer</span>' : ''}
+          </div>
+        `;
+
+        // Add click event listener to container to pin/unpin
+        // Allow clicking anywhere on the tile (including overlay) to pin/unpin.
+        // Ensure we only ever attach ONE pin handler per container to avoid double-toggles.
+        if (!container.dataset.pinHandlerAttached) {
+          container.dataset.pinHandlerAttached = 'true';
+          container.style.cursor = 'pointer';
+          container.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.togglePinVideo(participant.socketId);
+          });
+        }
+
+        // Update container pinned state
+        if (isPinned) {
+          container.classList.add('pinned');
+        }
+
+        container.appendChild(profilePicPlaceholder);
+        container.appendChild(overlay);
+
+        // Add to DOM
+        remoteVideosContainer.appendChild(container);
+
+        // Store reference
+        this.participantContainers.set(participant.socketId, container);
+      } else {
+        // Update existing container's profile pic and info if needed
+        const profilePicPlaceholder = container.querySelector('.profile-pic-placeholder');
+        if (profilePicPlaceholder) {
+          this.setProfilePicture(profilePicPlaceholder, participant.profile_pic, participant.name);
+        }
+
+        // Update overlay
+        const overlay = container.querySelector('.video-overlay');
+        if (overlay) {
+          overlay.innerHTML = `
+            <div class="video-info">
+              <span class="video-name">${participant.name}</span>
+              ${participant.isTrainer ? '<span class="video-trainer-badge">Trainer</span>' : ''}
+            </div>
+          `;
+        }
+      }
+    });
+
+    // Remove containers for participants who left
+    const currentSocketIds = new Set(this.participants.map(p => p.socketId));
+    const localSocketId = this.socket.id;
+
+    this.participantContainers.forEach((container, socketId) => {
+      if (socketId !== localSocketId && !currentSocketIds.has(socketId)) {
+        // Participant left, but keep container if they have active video consumers
+        // Only remove if no video consumers exist
+        const hasVideoConsumer = Array.from(this.consumers.values()).some(consumer => {
+          return consumer.appData && consumer.appData.producerSocketId === socketId;
+        });
+
+        if (!hasVideoConsumer) {
+          container.remove();
+          this.participantContainers.delete(socketId);
+        }
+      }
+    });
+
+    updateLayout();
+  }
+
+  // Track attendance API call
+  async trackAttendance(session_id, action) {
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        console.warn('No access token found for attendance tracking');
+        return;
+      }
+
+      // Get API base URL
+      const API_BASE_URL = 'http://10.254.167.80:8000/api/v1';
+
+      // Determine endpoint based on action
+      const endpoint = action === 'join'
+        ? `${API_BASE_URL}/attendances/session/${session_id}/join`
+        : `${API_BASE_URL}/attendances/session/${session_id}/leave`;
+
+      // Make API call
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Attendance tracking failed: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+      }
+
+      const data = await response.json().catch(() => ({}));
+      console.log(`Attendance tracked successfully (${action}):`, data);
+      return data;
+    } catch (error) {
+      console.error(`Error tracking attendance (${action}):`, error);
+      throw error;
+    }
+  }
+
+  // Helper method to set profile picture in a placeholder element
+  setProfilePicture(placeholder, profilePic, name) {
+    if (profilePic) {
+      // Get base URL - try multiple sources
+      let baseURL = 'http://10.254.167.80:8000/api/v1';
+      if (typeof window.API_BASE_URL !== 'undefined' && window.API_BASE_URL) {
+        baseURL = window.API_BASE_URL;
+      } else if (typeof window !== 'undefined' && window.location) {
+        const protocol = window.location.protocol;
+        const hostname = window.location.hostname;
+        baseURL = `${protocol}//${hostname}:8000/api/v1`;
+      }
+      const picUrl = profilePic.startsWith('http')
+        ? profilePic
+        : `${baseURL.replace('/api/v1', '')}/${profilePic}`;
+      placeholder.innerHTML = `
+        <img src="${picUrl}" alt="${name || 'User'}" 
+             style="width: 200px; height: 200px; border-radius: 50%; object-fit: cover; border: 4px solid white;" />
+      `;
+    } else {
+      // Default avatar with first letter
+      const initial = (name || 'U').charAt(0).toUpperCase();
+      placeholder.innerHTML = `
+        <div style="width: 200px; height: 200px; border-radius: 50%; background-color: #95D5B2; 
+                    display: flex; align-items: center; justify-content: center; 
+                    color: white; font-size: 72px; font-weight: bold; border: 4px solid white;">
+          ${initial}
+        </div>
+      `;
+    }
   }
 
   hasProducer(socketId, type) {
@@ -735,6 +1366,18 @@ class RoomClient {
           }
         }
 
+        // Show notification if function exists (defined in index.js)
+        if (typeof showLeaveNotification === 'function' && data.name && data.peerId !== this.socket.id) {
+          showLeaveNotification(data.name);
+        }
+
+        // Remove container for the participant who left
+        const container = this.participantContainers.get(data.peerId);
+        if (container) {
+          container.remove();
+          this.participantContainers.delete(data.peerId);
+        }
+
         // Remove the participant from our local list immediately
         if (this.participants) {
           this.participants = this.participants.filter(p => p.socketId !== data.peerId);
@@ -760,6 +1403,10 @@ class RoomClient {
     this.socket.on(
       'newPeer',
       function (data) {
+        // Show notification if function exists (defined in index.js)
+        if (typeof showJoinNotification === 'function' && data.name && data.peerId !== this.socket.id) {
+          showJoinNotification(data.name, data.isTrainer || false);
+        }
         // Refresh the participants list
         this.getParticipants()
       }.bind(this)
@@ -900,9 +1547,15 @@ class RoomClient {
           const container = document.getElementById(`container-local-${socket.id}`);
           if (container) {
             const video = container.querySelector('video');
+            const profilePic = container.querySelector('.profile-pic-placeholder');
             if (video) {
               video.srcObject = stream;
               video.play().catch(e => console.error('Error playing video:', e));
+              // Show video and hide profile pic when video starts
+              video.style.display = 'block';
+              if (profilePic) {
+                profilePic.style.display = 'none';
+              }
             }
           }
         }
@@ -916,6 +1569,18 @@ class RoomClient {
             stream.getTracks().forEach(function (track) {
               track.stop()
             })
+            // Show profile pic when video track ends
+            const container = document.getElementById(`container-local-${socket.id}`);
+            if (container) {
+              const video = container.querySelector('video');
+              const profilePic = container.querySelector('.profile-pic-placeholder');
+              if (video) {
+                video.style.display = 'none';
+                if (profilePic) {
+                  profilePic.style.display = 'flex';
+                }
+              }
+            }
           }
           this.producers.delete(producer.id)
           this.updateCaptureButtonVisibility()
@@ -926,6 +1591,18 @@ class RoomClient {
             stream.getTracks().forEach(function (track) {
               track.stop()
             })
+            // Show profile pic when video producer closes
+            const container = document.getElementById(`container-local-${socket.id}`);
+            if (container) {
+              const video = container.querySelector('video');
+              const profilePic = container.querySelector('.profile-pic-placeholder');
+              if (video) {
+                video.style.display = 'none';
+                if (profilePic) {
+                  profilePic.style.display = 'flex';
+                }
+              }
+            }
           }
           this.producers.delete(producer.id)
           this.updateCaptureButtonVisibility()
@@ -981,10 +1658,35 @@ class RoomClient {
 
       let elem;
       if (kind === 'video') {
-        // Create a container for the video and its overlay
-        const container = document.createElement('div');
-        container.className = 'video-container';
-        container.id = `container-${consumer.id}`;
+        // Find the participant info based on the producer socket ID
+        const participant = this.participants.find(p => p.socketId === appData.producerSocketId);
+        const participantName = participant ? participant.name : 'Unknown';
+        const isTrainer = participant ? participant.isTrainer : false;
+        const participantProfilePic = participant ? participant.profile_pic : null;
+
+        // Check if container already exists for this participant
+        let container = this.participantContainers.get(appData.producerSocketId);
+
+        if (!container) {
+          // Create a new container for the video and its overlay
+          container = document.createElement('div');
+          container.className = 'video-container';
+          container.id = `container-${consumer.id}`;
+          container.dataset.socketId = appData.producerSocketId;
+          container.style.position = 'relative';
+          container.style.width = '100%';
+          container.style.height = '100%';
+          container.style.display = 'flex';
+          container.style.alignItems = 'center';
+          container.style.justifyContent = 'center';
+          container.style.backgroundColor = '#1B4332';
+
+          // Store reference
+          this.participantContainers.set(appData.producerSocketId, container);
+        } else {
+          // Update container ID to include consumer ID for tracking
+          container.id = `container-${consumer.id}`;
+        }
 
         // Create the video element
         elem = document.createElement('video');
@@ -993,17 +1695,46 @@ class RoomClient {
         elem.playsinline = true;
         elem.autoplay = true;
         elem.className = 'vid';
+        elem.style.width = '100%';
+        elem.style.height = '100%';
+        elem.style.objectFit = 'contain';
+        elem.style.display = 'block'; // Show video initially
+        elem.style.pointerEvents = 'none'; // Allow clicks to pass through to container
 
-        // Create an overlay for the name and trainer tag
-        const overlay = document.createElement('div');
-        overlay.className = 'video-overlay';
+        // Get or create profile picture placeholder
+        let profilePicPlaceholder = container.querySelector('.profile-pic-placeholder');
+        if (!profilePicPlaceholder) {
+          profilePicPlaceholder = document.createElement('div');
+          profilePicPlaceholder.className = 'profile-pic-placeholder';
+          profilePicPlaceholder.style.width = '100%';
+          profilePicPlaceholder.style.height = '100%';
+          profilePicPlaceholder.style.alignItems = 'center';
+          profilePicPlaceholder.style.justifyContent = 'center';
+          profilePicPlaceholder.style.position = 'absolute';
+          profilePicPlaceholder.style.top = '0';
+          profilePicPlaceholder.style.left = '0';
+          profilePicPlaceholder.style.right = '0';
+          profilePicPlaceholder.style.bottom = '0';
+          profilePicPlaceholder.style.zIndex = '1';
+          container.appendChild(profilePicPlaceholder);
+        }
+        profilePicPlaceholder.id = `profile-pic-${consumer.id}`;
+        profilePicPlaceholder.style.display = 'none'; // Hidden initially when video is on
 
-        // Find the participant info based on the producer socket ID
-        const participant = this.participants.find(p => p.socketId === appData.producerSocketId);
-        const participantName = participant ? participant.name : 'Unknown';
-        const isTrainer = participant ? participant.isTrainer : false;
+        // Set profile picture
+        this.setProfilePicture(profilePicPlaceholder, participantProfilePic, participantName);
+
+        // Get or create overlay for the name and trainer tag
+        let overlay = container.querySelector('.video-overlay');
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.className = 'video-overlay';
+          overlay.style.zIndex = '2';
+          container.appendChild(overlay);
+        }
 
         // Set the overlay content
+        const isPinned = this.pinnedVideos.get(appData.producerSocketId) || false;
         overlay.innerHTML = `
           <div class="video-info">
             <span class="video-name">${participantName}</span>
@@ -1011,12 +1742,89 @@ class RoomClient {
           </div>
         `;
 
-        // Add the video and overlay to the container
-        container.appendChild(elem);
-        container.appendChild(overlay);
+        // Add click event listener to container to pin/unpin
+        // Remove any legacy onclick handler and rely on addEventListener + a guard flag
+        container.onclick = null;
 
-        // Add the container to the remote videos element
-        document.getElementById('remoteVideos').appendChild(container);
+        if (!container.dataset.pinHandlerAttached) {
+          container.dataset.pinHandlerAttached = 'true';
+          container.style.cursor = 'pointer';
+          container.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.togglePinVideo(appData.producerSocketId);
+          });
+        }
+
+        // Update container pinned state
+        if (isPinned) {
+          container.classList.add('pinned');
+        } else {
+          container.classList.remove('pinned');
+        }
+
+        // Check if video element already exists in container
+        let existingVideo = container.querySelector('video');
+        if (existingVideo) {
+          // Update existing video element
+          existingVideo.id = consumer.id;
+          existingVideo.srcObject = stream;
+          existingVideo.style.pointerEvents = 'none'; // Allow clicks to pass through
+          elem = existingVideo;
+        } else {
+          // Add video element to container
+          container.appendChild(elem);
+        }
+
+        // Ensure container is in the DOM
+        const remoteVideosContainer = document.getElementById('remoteVideos');
+        if (container.parentElement !== remoteVideosContainer) {
+          remoteVideosContainer.appendChild(container);
+        }
+
+        // Check if video track is actually active, if not show profile pic
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack && videoTrack.readyState === 'live' && !videoTrack.muted && videoTrack.enabled) {
+          elem.style.display = 'block';
+          profilePicPlaceholder.style.display = 'none';
+        } else {
+          elem.style.display = 'none';
+          profilePicPlaceholder.style.display = 'flex';
+        }
+
+        // Listen for track ended event to show profile pic
+        if (videoTrack) {
+          videoTrack.addEventListener('ended', () => {
+            elem.style.display = 'none';
+            profilePicPlaceholder.style.display = 'flex';
+          });
+
+          // Listen for track mute/unmute to toggle between video and profile pic
+          videoTrack.addEventListener('mute', () => {
+            elem.style.display = 'none';
+            profilePicPlaceholder.style.display = 'flex';
+          });
+
+          videoTrack.addEventListener('unmute', () => {
+            if (videoTrack.readyState === 'live' && videoTrack.enabled) {
+              elem.style.display = 'block';
+              profilePicPlaceholder.style.display = 'none';
+            }
+          });
+
+          // Listen for track enabled/disabled
+          videoTrack.addEventListener('disabled', () => {
+            elem.style.display = 'none';
+            profilePicPlaceholder.style.display = 'flex';
+          });
+
+          videoTrack.addEventListener('enabled', () => {
+            if (videoTrack.readyState === 'live' && !videoTrack.muted) {
+              elem.style.display = 'block';
+              profilePicPlaceholder.style.display = 'none';
+            }
+          });
+        }
 
         updateLayout(); // Update layout after adding video
         this.handleFS(elem.id);
@@ -1032,6 +1840,20 @@ class RoomClient {
       consumer.on(
         'trackended',
         function () {
+          // Show profile pic when video track ends
+          if (kind === 'video') {
+            const container = document.getElementById(`container-${consumer.id}`);
+            if (container) {
+              const video = container.querySelector('video');
+              const profilePic = container.querySelector('.profile-pic-placeholder');
+              if (video) {
+                video.style.display = 'none';
+                if (profilePic) {
+                  profilePic.style.display = 'flex';
+                }
+              }
+            }
+          }
           this.removeConsumer(consumer.id);
         }.bind(this)
       );
@@ -1140,11 +1962,23 @@ class RoomClient {
         const container = document.getElementById(`container-local-${socket.id}`);
         if (container) {
           const video = container.querySelector('video');
+          const profilePic = container.querySelector('.profile-pic-placeholder');
           if (video && video.srcObject) {
             video.srcObject.getTracks().forEach(function (track) {
               track.stop()
             })
             video.srcObject = null;
+            // Hide video and show profile pic when video stops
+            video.style.display = 'none';
+            if (profilePic) {
+              profilePic.style.display = 'flex';
+            }
+          } else if (video) {
+            // Even if no srcObject, ensure profile pic is shown
+            video.style.display = 'none';
+            if (profilePic) {
+              profilePic.style.display = 'flex';
+            }
           }
         }
       }
@@ -1191,10 +2025,38 @@ class RoomClient {
       const consumer = this.consumers.get(consumer_id);
       if (!consumer) return;
 
-      // Remove the video container
+      // Get the producer socket ID
+      const producerSocketId = consumer.appData ? consumer.appData.producerSocketId : null;
+
+      // Find the container
       const container = document.getElementById(`container-${consumer_id}`);
       if (container) {
-        container.remove();
+        // Remove video element but keep container (will show profile pic)
+        const video = container.querySelector('video');
+        if (video && video.id === consumer_id) {
+          video.remove();
+
+          // Show profile pic if container still exists
+          const profilePic = container.querySelector('.profile-pic-placeholder');
+          if (profilePic) {
+            profilePic.style.display = 'flex';
+          }
+        }
+
+        // Only remove container if no other video consumers exist for this participant
+        if (producerSocketId) {
+          const hasOtherVideoConsumers = Array.from(this.consumers.values()).some(c => {
+            return c.appData &&
+              c.appData.producerSocketId === producerSocketId &&
+              c.id !== consumer_id &&
+              c.kind === 'video';
+          });
+
+          if (!hasOtherVideoConsumers) {
+            // No other video consumers, but keep container showing profile pic
+            // Container will be removed when participant leaves
+          }
+        }
       }
 
       // Remove the consumer
@@ -1211,8 +2073,18 @@ class RoomClient {
     }
   }
 
-  exit(offline = false) {
+  async exit(offline = false) {
     try {
+      // Track attendance - leave session (before reload)
+      if (this.room_id && !offline) {
+        try {
+          await this.trackAttendance(this.room_id, 'leave');
+        } catch (err) {
+          console.error('Failed to track attendance (leave):', err);
+          // Continue with exit even if attendance tracking fails
+        }
+      }
+
       window.location.reload();
       // Close all producers
       this.producers.forEach((producer) => {
@@ -1293,8 +2165,14 @@ class RoomClient {
 
       this._isOpen = false;
 
+      // Remove beforeunload handler
+      if (this.beforeUnloadHandler) {
+        window.removeEventListener('beforeunload', this.beforeUnloadHandler);
+      }
+
       // Reset any global variables or states
       this.participants = [];
+      this.participantContainers.clear();
       this.capturedImages.clear();
       this.latestCapturedPose = null;
       this.poseDetectionActive = false;
@@ -1386,30 +2264,32 @@ class RoomClient {
       }
     });
 
-    elementToFullscreen.addEventListener('click', (e) => {
-      if (videoPlayer.controls) return;
-      if (!this.isVideoOnFullScreen) {
-        if (elementToFullscreen.requestFullscreen) {
-          elementToFullscreen.requestFullscreen();
-        } else if (elementToFullscreen.webkitRequestFullscreen) {
-          elementToFullscreen.webkitRequestFullscreen();
-        } else if (elementToFullscreen.msRequestFullscreen) {
-          elementToFullscreen.msRequestFullscreen();
-        }
-        this.isVideoOnFullScreen = true;
-        elementToFullscreen.style.pointerEvents = 'none';
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitCancelFullScreen) {
-          document.webkitCancelFullScreen();
-        } else if (document.msExitFullscreen) {
-          document.msExitFullscreen();
-        }
-        this.isVideoOnFullScreen = false;
-        elementToFullscreen.style.pointerEvents = 'auto';
-      }
-    });
+    // Disabled: Click handler that triggers fullscreen removed
+    // Videos will no longer go fullscreen on click
+    // elementToFullscreen.addEventListener('click', (e) => {
+    //   if (videoPlayer.controls) return;
+    //   if (!this.isVideoOnFullScreen) {
+    //     if (elementToFullscreen.requestFullscreen) {
+    //       elementToFullscreen.requestFullscreen();
+    //     } else if (elementToFullscreen.webkitRequestFullscreen) {
+    //       elementToFullscreen.webkitRequestFullscreen();
+    //     } else if (elementToFullscreen.msRequestFullscreen) {
+    //       elementToFullscreen.msRequestFullscreen();
+    //     }
+    //     this.isVideoOnFullScreen = true;
+    //     elementToFullscreen.style.pointerEvents = 'none';
+    //   } else {
+    //     if (document.exitFullscreen) {
+    //       document.exitFullscreen();
+    //     } else if (document.webkitCancelFullScreen) {
+    //       document.webkitCancelFullScreen();
+    //     } else if (document.msExitFullscreen) {
+    //       document.msExitFullscreen();
+    //     }
+    //     this.isVideoOnFullScreen = false;
+    //     elementToFullscreen.style.pointerEvents = 'auto';
+    //   }
+    // });
   }
 
   async kickParticipant(peerId) {
@@ -2045,6 +2925,47 @@ class RoomClient {
       const hasVideoProducer = this.producerLabel.has(mediaType.video);
       captureButton.style.display = hasVideoProducer ? 'flex' : 'none';
     }
+  }
+
+  // Toggle pin state for a video (only one video can be pinned at a time)
+  togglePinVideo(socketId) {
+    const isPinned = this.pinnedVideos.get(socketId) || false;
+
+    // If clicking on already pinned video, unpin it
+    if (isPinned) {
+      this.pinnedVideos.set(socketId, false);
+      const containers = Array.from(document.querySelectorAll(`[data-socket-id="${socketId}"]`));
+      containers.forEach(container => {
+        container.classList.remove('pinned');
+      });
+    } else {
+      // Unpin any currently pinned video (only one can be pinned)
+      this.pinnedVideos.forEach((pinned, existingSocketId) => {
+        if (pinned && existingSocketId !== socketId) {
+          this.pinnedVideos.set(existingSocketId, false);
+          const existingContainers = Array.from(document.querySelectorAll(`[data-socket-id="${existingSocketId}"]`));
+          existingContainers.forEach(container => {
+            container.classList.remove('pinned');
+          });
+        }
+      });
+
+      // Pin the new video
+      this.pinnedVideos.set(socketId, true);
+      const containers = Array.from(document.querySelectorAll(`[data-socket-id="${socketId}"]`));
+      containers.forEach(container => {
+        container.classList.add('pinned');
+      });
+    }
+
+    // Update layout to show pinned video prominently
+    updateLayout();
+  }
+
+  // Update pin button visual state (no longer needed, but kept for compatibility)
+  updatePinButtonState(socketId) {
+    // Pin state is now handled by CSS classes on the container
+    // This method is kept for compatibility but does nothing
   }
 
   initPoseComparison() {

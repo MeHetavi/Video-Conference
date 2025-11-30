@@ -9,7 +9,11 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="stylesheet" href="/style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <script src="/socket.io/socket.io.js"></script>
     <script src="/modules/mediasoupclient.min.js"></script>
     <script src="/modules/EventEmitter.min.js"></script>
@@ -17,6 +21,8 @@
     <script src="/RoomClient.js"></script>
     <script src="/mediaflow-logger.js"></script>
     <script src="/room-client-logger.js"></script>
+    <link rel="stylesheet" href="/global.css">
+    <link rel="stylesheet" href="/toast.css">
     <!-- Import TensorFlow.js and PoseNet -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
     <script
@@ -55,6 +61,106 @@
 
         // Make socket instance globally available
         window.socket = null;
+
+        // User profile data
+        let userProfile = null;
+
+        // Make user profile globally available
+        window.userProfile = null;
+
+        // Function to get token from URL and store it
+        function getTokenFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            if (token) {
+                // Store token in localStorage
+                localStorage.setItem('access_token', token);
+                return token;
+            }
+            // Fallback to localStorage
+            return localStorage.getItem('access_token');
+        }
+
+        // Function to fetch user profile
+        async function fetchUserProfile(token) {
+            if (!token) {
+                console.warn('No token available to fetch user profile');
+                return null;
+            }
+
+            try {
+                const API_BASE_URL = 'http://10.254.167.80:8000/api/v1';
+                const response = await fetch(`${API_BASE_URL}/me/profile`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                // Handle different response structures
+                if (data.success) {
+                    if (data.data && data.data.user) {
+                        userProfile = data.data.user;
+                    } else if (data.data && !data.data.user) {
+                        // Direct user object in data
+                        userProfile = data.data;
+                    } else if (data.user) {
+                        userProfile = data.user;
+                    }
+                    if (userProfile) {
+                        // Store globally for use in video container
+                        window.userProfile = userProfile;
+                        return userProfile;
+                    }
+                }
+                return null;
+            } catch (error) {
+                console.error('Error fetching user profile:', error);
+                return null;
+            }
+        }
+
+        // Function to display user profile in the join panel
+        function displayUserProfile(profile) {
+            if (!profile) return;
+
+            const nameInput = document.getElementById('nameInput');
+            const profilePicContainer = document.getElementById('userProfilePic');
+            const usernameDisplay = document.getElementById('usernameDisplay');
+
+            // Set name
+            if (nameInput && profile.name) {
+                nameInput.value = profile.name;
+            }
+
+            // Display profile picture
+            if (profilePicContainer) {
+                if (profile.profile_pic) {
+                    const baseURL = 'http://10.254.167.80:8000/api/v1';
+                    const picUrl = profile.profile_pic.startsWith('http')
+                        ? profile.profile_pic
+                        : `${baseURL.replace('/api/v1', '')}/${profile.profile_pic}`;
+                    profilePicContainer.innerHTML = `<img src="${picUrl}" alt="${profile.name}" class="w-16 h-16 rounded-full object-cover border-2 border-[#1B4332]" />`;
+                    profilePicContainer.style.display = 'block';
+                } else {
+                    // Default avatar
+                    profilePicContainer.innerHTML = `<div class="w-16 h-16 rounded-full bg-[#1B4332] flex items-center justify-center text-white text-xl font-semibold">${(profile.name || 'U').charAt(0).toUpperCase()}</div>`;
+                    profilePicContainer.style.display = 'block';
+                }
+            }
+
+            // Display username
+            if (usernameDisplay && profile.username) {
+                usernameDisplay.textContent = `@${profile.username}`;
+                usernameDisplay.style.display = 'block';
+            }
+        }
 
         // Function to parse URL parameters
         function parseUrlParameters() {
@@ -135,10 +241,68 @@
             }
         }
 
-        // Initialize everything when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function () {
+        // Check authentication and redirect to auth screen if no token
+        function checkAuthentication() {
+            // Check localStorage for token (common key used by main app)
+            const token = localStorage.getItem('access_token');
+            // if (!token) {
+            //     // Get the main app URL
+            //     // Try to detect main app URL based on current location
+            //     const currentHost = window.location.hostname;
+            //     const currentProtocol = window.location.protocol;
+            //     const currentPort = window.location.port;
 
-            // Parse URL parameters
+            //     // If video conference is on port 3016, assume main app is on 3000
+            //     // You can also set window.MAIN_APP_URL if needed
+            //     let mainAppUrl;
+
+            //     if (typeof window.MAIN_APP_URL !== 'undefined' && window.MAIN_APP_URL) {
+            //         // Use configured main app URL
+            //         mainAppUrl = window.MAIN_APP_URL;
+            //     } else if (currentPort === '3016' || currentPort === '') {
+            //         // Default to port 3000 for main app
+            //         const mainAppPort = '3000';
+            //         mainAppUrl = `${currentProtocol}//${currentHost}:${mainAppPort}`;
+            //     } else {
+            //         // Same host, different port - try port 3000
+            //         mainAppUrl = `${currentProtocol}//${currentHost}:3000`;
+            //     }
+
+            //     // Store the current URL to redirect back after auth
+            //     const returnUrl = window.location.href;
+            //     sessionStorage.setItem('returnUrl', returnUrl);
+
+            //     console.log('No authentication token found. Redirecting to:', `${mainAppUrl}/auth`);
+
+            //     // Redirect to auth page
+            //     window.location.href = `${mainAppUrl}/auth`;
+            //     return false;
+            // }
+
+            return true;
+        }
+
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', async function () {
+            // Get token from URL first (if provided)
+            const tokenFromURL = getTokenFromURL();
+
+            // Check authentication - redirect if no token
+            if (!tokenFromURL && !checkAuthentication()) {
+                return; // Stop execution if redirecting to auth
+            }
+
+            // Fetch user profile if token is available
+            const token = tokenFromURL || localStorage.getItem('access_token');
+            if (token) {
+                const profile = await fetchUserProfile(token);
+                if (profile) {
+                    displayUserProfile(profile);
+                    // Trainer status will be determined from ownership API when joining
+                }
+            }
+
+            // Parse URL parameters (this may override profile-based detection if URL explicitly sets it)
             parseUrlParameters();
 
             // Populate form fields
@@ -188,122 +352,257 @@
     </script>
 </head>
 
-<body>
+<body class="min-h-[94vh] bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden">
+
+    <!-- Green blur patches in background -->
+    <div class="fixed inset-0 pointer-events-none -z-10">
+        <div class="absolute top-20 left-10 w-96 h-96 bg-[#95D5B2]/30 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/3 right-20 w-80 h-80 bg-[#40916C]/25 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-1/4 left-1/4 w-72 h-72 bg-[#52B788]/30 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-20 right-1/3 w-96 h-96 bg-[#95D5B2]/25 rounded-full blur-3xl"></div>
+        <div
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#2D6A4F]/20 rounded-full blur-3xl">
+        </div>
+    </div>
 
     <!-- Add notification container -->
     <div id="notificationContainer" class="notification-container"></div>
 
-    <div class="login-container" id="loginContainer">
+    <div class="login-container relative z-10" id="loginContainer" style="z-index: 10;">
         <div class="login-blur" id="loginBlur">
-            <div id="login">
-                <h1>Join Meeting</h1>
-                <label for="roomidInput">Room ID</label>
-                <input id="roomidInput" placeholder="Enter room ID" disabled type="text" />
-                <label for="nameInput">Your Name</label>
-                <input id="nameInput" autofocus placeholder="Enter your name" disabled type="text" />
+            <div id="login" class="w-full flex items-center justify-center mt-10 p-3">
 
-                <button id="joinButton" onclick="joinRoom(nameInput.value, roomidInput.value)">
-                    Join Now
-                </button>
+                <!-- Lobby layout -->
+                <div class="grid grid-cols-1 md:grid-cols-[1fr_480px] items-start w-full max-w-7xl mx-auto ">
+                    <!-- Left: Preview Card -->
+                    <div>
+                        <div class="relative rounded-2xl overflow-hidden bg-neutral-900 aspect-video">
+                            <video id="lobbyPreview" autoplay muted playsinline
+                                class="w-full h-full object-cover bg-black"></video>
+                            <!-- Top bar -->
+                            <div
+                                class="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/60 to-transparent flex items-center justify-between px-2">
+                                <div id="lobbyUserName" class="text-white text-sm font-medium"></div>
+                            </div>
+                            <!-- Center message -->
+                            <div id="lobbyPreviewCenterMsg"
+                                class="absolute inset-0 flex items-center justify-center text-white/90 text-xl">
+                                Camera is starting
+                            </div>
+                            <!-- Bottom controls -->
+                            <div
+                                class="absolute inset-x-0 bottom-0 pb-6 pt-12 bg-gradient-to-t from-black/60 to-transparent flex items-center justify-center gap-4">
+                                <button id="lobbyMicToggle" type="button"
+                                    class="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+                                    <i class="fa-solid fa-microphone"></i>
+                                </button>
+                                <button id="lobbyCamToggle" type="button"
+                                    class="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+                                    <i class="fa-solid fa-video"></i>
+                                </button>
+                            </div>
+
+                        </div>
+                        <!-- Bottom device selectors -->
+                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                            <select id="lobbyMicSelect"
+                                class="w-full h-10 px-4 rounded-full bg-white/80 border border-white/40 text-[#3E2C1C] backdrop-blur min-w-0">
+                                <option>Loading microphones…</option>
+                            </select>
+                            <select id="lobbySpeakerSelect"
+                                class="w-full h-10 px-4 rounded-full bg-white/80 border border-white/40 text-[#3E2C1C] backdrop-blur min-w-0">
+                                <option>Loading speakers…</option>
+                            </select>
+                            <select id="lobbyCameraSelect"
+                                class="w-full h-10 px-4 rounded-full bg-white/80 border border-white/40 text-[#3E2C1C] backdrop-blur min-w-0">
+                                <option>Loading cameras…</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Right: Join Panel -->
+                    <div
+                        class="mx-auto mt-2 md:my-auto border border-white/30 text-center rounded-2xl w-80 p-4 shadow-lg bg-white/60 modern-card">
+                        <div class="text-2xl font-semibold text-[#1B4332]">Ready to join?</div>
+                        <!-- User Profile Display -->
+                        <div id="userProfilePic" class="mt-4 flex justify-center items-center" style="display: none;">
+                        </div>
+                        <div id="usernameDisplay" class="mt-2 text-sm text-[#3E2C1C] font-medium"
+                            style="display: none;"></div>
+                        <!-- Original details moved to the join panel -->
+                        <div class="mt-6 space-y-2 text-start">
+                            <div class="hidden">
+                                <label for="roomidInput" class="text-sm text-[#3E2C1C]">Room ID</label>
+                                <input id="roomidInput" placeholder="Enter room ID" disabled type="text" />
+                            </div>
+                            <label for="nameInput" class="text-md text-[#3E2C1C]">Name</label>
+                            <br / />
+                            <input id="nameInput" autofocus placeholder="Enter your name" disabled type="text"
+                                class="modern-input w-full px-4 py-2 rounded-lg ring-1 ring-[#6e36136c] focus:ring-2 focus:ring-[#1B4332] focus:border-transparent transition-all duration-200" />
+                        </div>
+                        <div class="mt-6">
+                            <button id="joinButton" class="w-full bg-[#1B4332] text-white rounded-xl p-2"
+                                onclick="joinRoom(nameInput.value, roomidInput.value)">
+                                Join Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+
             </div>
         </div>
     </div>
 
-    <div id="callScreen" class="hidden">
+    <div id="callScreen" class="hidden min-h-screen w-full bg-gradient-to-br from-[#DAD7CD] to-[#95D5B2]/30 relative">
+        <!-- Additional green blur patches for call screen -->
+        <div class="fixed inset-0 pointer-events-none -z-10">
+            <div class="absolute top-32 left-16 w-[400px] h-[400px] bg-[#95D5B2]/35 rounded-full blur-3xl"></div>
+            <div class="absolute top-1/4 right-24 w-[350px] h-[350px] bg-[#40916C]/30 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-1/3 left-1/3 w-[380px] h-[380px] bg-[#52B788]/35 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-24 right-1/4 w-[420px] h-[420px] bg-[#95D5B2]/30 rounded-full blur-3xl"></div>
+        </div>
+
+        <!-- Notification container for call screen -->
+        <div id="notificationContainerCall" class="notification-container"></div>
         <!-- Video area with strict height boundary -->
-        <div id="videoMedia" class="hidden">
-            <!-- Remote videos container with fixed boundaries -->
+        <div id="videoMedia" class="hidden min-h-screen pb-20 relative z-10">
+            <!-- Google Meet style: All videos in a single grid container -->
+            <div id="videoGridContainer" class="w-full h-full p-4 relative">
+                <!-- Main grid for all videos (local + remote) -->
+                <div id="remoteVideos" class="w-full h-full grid gap-4"></div>
 
-            <div id="remoteVideos"></div>
-            <div id="remoteAudios"></div>
-            <div id="localMedia"></div>
-
-            <!-- Local video in top right -->
-
-            <!-- Participants panel -->
-            <div id="participantsPanel" class="participants-panel hidden">
-                <div class="participants-header">
-                    <h6>Participants</h6>
-                    <span class="participants-count" id="participantsCount">0 users</span>
-                </div>
-                <div id="participantsList">
-                    <!-- Participants will be dynamically added here -->
+                <!-- Local video container (will be positioned as overlay in bottom-right) -->
+                <div id="localVideoContainer" class="absolute bottom-4 right-4 z-20"
+                    style="width: 300px; max-width: 25vw;">
+                    <div id="localMedia" class="w-full h-full"></div>
                 </div>
             </div>
+
+            <div id="remoteAudios"></div>
+
         </div>
 
         <!-- Controls at the bottom with fixed height -->
-        <div id="control" class="hidden">
-            <button id="startAudioButton" class="control-button hidden"
-                onclick="rc.produce(RoomClient.mediaType.audio, audioSelect.value)">
-                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
-                    fill="#e3e3e3">
-                    <path
-                        d="M480-400q-50 0-85-35t-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35Zm0-240Zm-40 520v-123q-104-14-172-93t-68-184h80q0 83 58.5 141.5T480-320q83 0 141.5-58.5T680-520h80q0 105-68 184t-172 93v123h-80Zm40-360q17 0 28.5-11.5T520-520v-240q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760v240q0 17 11.5 28.5T480-480Z" />
-                </svg>
-            </button>
-            <button id="stopAudioButton" class="control-button hidden"
-                onclick="rc.closeProducer(RoomClient.mediaType.audio)">
-                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
-                    fill="#e3e3e3">
-                    <path
-                        d="m710-362-58-58q14-23 21-48t7-52h80q0 44-13 83.5T710-362ZM480-594Zm112 112-72-72v-206q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760v126l-80-80v-46q0-50 35-85t85-35q50 0 85 35t35 85v240q0 11-2.5 20t-5.5 18ZM440-120v-123q-104-14-172-93t-68-184h80q0 83 57.5 141.5T480-320q34 0 64.5-10.5T600-360l57 57q-29 23-63.5 39T520-243v123h-80Zm352 64L56-792l56-56 736 736-56 56Z" />
-                </svg>
-            </button>
+        <div id="control"
+            class="hidden fixed bottom-0 left-0 right-0 w-full backdrop-blur-xl border-t border-white/20 shadow-2xl z-50">
+            <!-- Main controls bar -->
+            <div
+                class="w-full h-20 flex items-center justify-between px-4 gap-4  bg-[#1B4332]/50 backdrop-blur-xl rounded-t-2xl fixed bottom-0">
+                <!-- Meeting duration on the left -->
+                <!-- <div id="meetingDuration" class="text-white text-sm font-medium min-w-[80px]">
+                    00:16:54
+                </div> -->
 
-            <button id="startVideoButton" class="control-button hidden"
-                onclick="rc.produce(RoomClient.mediaType.video, videoSelect.value)">
-                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
-                    fill="#e3e3e3">
-                    <path
-                        d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h480q33 0 56.5 23.5T720-720v180l160-160v440L720-420v180q0 33-23.5 56.5T640-160H160Zm0-80h480v-480H160v480Zm0 0v-480 480Z" />
-                </svg>
-            </button>
-            <button id="stopVideoButton" class="control-button hidden"
-                onclick="rc.closeProducer(RoomClient.mediaType.video)">
-                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
-                    fill="#e3e3e3">
-                    <path
-                        d="M880-260 720-420v67l-80-80v-287H353l-80-80h367q33 0 56.5 23.5T720-720v180l160-160v440ZM822-26 26-822l56-56L878-82l-56 56ZM498-575ZM382-464ZM160-800l80 80h-80v480h480v-80l80 80q0 33-23.5 56.5T640-160H160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800Z" />
-                </svg>
-            </button>
+                <!-- Control buttons centered -->
+                <div class="flex items-center justify-center gap-3 flex-1">
+                    <button id="startAudioButton"
+                        class="control-button hidden w-12 h-12 md:w-14 md:h-14 rounded-full  hover:bg-white/20 active:scale-95 flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:shadow-xl"
+                        onclick="rc.produce(RoomClient.mediaType.audio, audioSelect.value)">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                            fill="#e3e3e3">
+                            <path
+                                d="M480-400q-50 0-85-35t-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35Zm0-240Zm-40 520v-123q-104-14-172-93t-68-184h80q0 83 58.5 141.5T480-320q83 0 141.5-58.5T680-520h80q0 105-68 184t-172 93v123h-80Zm40-360q17 0 28.5-11.5T520-520v-240q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760v240q0 17 11.5 28.5T480-480Z" />
+                        </svg>
+                    </button>
+                    <button id="stopAudioButton"
+                        class="control-button hidden w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:shadow-xl"
+                        onclick="rc.closeProducer(RoomClient.mediaType.audio)">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                            fill="#e3e3e3">
+                            <path
+                                d="m710-362-58-58q14-23 21-48t7-52h80q0 44-13 83.5T710-362ZM480-594Zm112 112-72-72v-206q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760v126l-80-80v-46q0-50 35-85t85-35q50 0 85 35t35 85v240q0 11-2.5 20t-5.5 18ZM440-120v-123q-104-14-172-93t-68-184h80q0 83 57.5 141.5T480-320q34 0 64.5-10.5T600-360l57 57q-29 23-63.5 39T520-243v123h-80Zm352 64L56-792l56-56 736 736-56 56Z" />
+                        </svg>
+                    </button>
 
-            <button id="startScreenButton" class="control-button hidden"
-                onclick="rc.produce(RoomClient.mediaType.screen)">
-                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
-                    fill="#e3e3e3">
-                    <path
-                        d="M444-336h72v-150l57.12 57.3L624-480 480-624 336-480l51 51 57-57v150ZM168-192q-29.7 0-50.85-21.16Q96-234.32 96-264.04v-432.24Q96-726 117.15-747T168-768h624q29.7 0 50.85 21.16Q864-725.68 864-695.96v432.24Q864-234 842.85-213T792-192H168Zm0-72h624v-432H168v432Zm0 0v-432 432Z" />
-                </svg>
-            </button>
-            <button id="stopScreenButton" class="control-button hidden"
-                onclick="rc.closeProducer(RoomClient.mediaType.screen)">
-                <i class="fas fa-stop"></i>
-            </button>
+                    <button id="startVideoButton"
+                        class="control-button hidden w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:shadow-xl"
+                        onclick="rc.produce(RoomClient.mediaType.video, videoSelect.value)">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                            fill="#e3e3e3">
+                            <path
+                                d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h480q33 0 56.5 23.5T720-720v180l160-160v440L720-420v180q0 33-23.5 56.5T640-160H160Zm0-80h480v-480H160v480Zm0 0v-480 480Z" />
+                        </svg>
+                    </button>
+                    <button id="stopVideoButton"
+                        class="control-button hidden w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:shadow-xl"
+                        onclick="rc.closeProducer(RoomClient.mediaType.video)">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                            fill="#e3e3e3">
+                            <path
+                                d="M880-260 720-420v67l-80-80v-287H353l-80-80h367q33 0 56.5 23.5T720-720v180l160-160v440ZM822-26 26-822l56-56L878-82l-56 56ZM498-575ZM382-464ZM160-800l80 80h-80v480h480v-80l80 80q0 33-23.5 56.5T640-160H160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800Z" />
+                        </svg>
+                    </button>
 
-            <button id="participantsButton" class="control-button hidden" onclick="toggleParticipants()">
-                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
-                    fill="#e3e3e3">
-                    <path
-                        d="M0-240v-59q0-51 45-80t123-29q15 0 30 1.5t30 4.5q-17 20-26.5 45t-9.5 50.56V-240H0Zm240 0v-61q0-27.86 14.5-50.93T293-387q44-22 91-33.5t95.53-11.5Q529-432 576-420.5t91 33.5q24 12 38.5 35.07T720-301v61H240Zm528 0v-67.37q0-26.95-9.5-50.79T732-402q17-3 31.5-4.5T792-408q78 0 123 29t45 80v59H768Zm-454-72h332q-7-17-59.5-32.5T480-360q-54 0-106.5 15.5T314-312ZM167.79-456Q138-456 117-477.03q-21-21.02-21-50.55Q96-558 117.03-579q21.02-21 50.55-21Q198-600 219-579.24t21 51.45Q240-498 219.24-477t-51.45 21Zm624 0Q762-456 741-477.03q-21-21.02-21-50.55Q720-558 741.03-579q21.02-21 50.55-21Q822-600 843-579.24t21 51.45Q864-498 843.24-477t-51.45 21ZM479.5-480q-49.5 0-84.5-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85.5q0 49.5-35 84.5t-85.5 35Zm.5-72q20.4 0 34.2-13.8Q528-579.6 528-600q0-20.4-13.8-34.2Q500.4-648 480-648q-20.4 0-34.2 13.8Q432-620.4 432-600q0 20.4 13.8 34.2Q459.6-552 480-552Zm0 240Zm0-288Z" />
-                </svg>
-            </button>
+                    <button id="handRaiseButton"
+                        class="control-button hidden w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:shadow-xl"
+                        onclick="toggleHandRaise()">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                            fill="#e3e3e3">
+                            <path
+                                d="M280-80v-200H120v-280q0-33 23.5-56.5T200-640h120v-160q0-33 23.5-56.5T400-880q33 0 56.5 23.5T480-800v160h120q33 0 56.5 23.5T680-560v280H520v200H280Zm80-80h240v-120H360v120Zm0-200h240v-200H360v200Zm-80-80h400v-200H280v200Zm0 0v-200 200Z" />
+                        </svg>
+                    </button>
 
+                    <button id="participantsButton"
+                        class="control-button hidden participants-toggle w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:shadow-xl"
+                        onclick="toggleParticipants()" aria-label="Show participants" aria-pressed="false">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                            fill="#e3e3e3" aria-hidden="true">
+                            <path
+                                d="M0-240v-59q0-51 45-80t123-29q15 0 30 1.5t30 4.5q-17 20-26.5 45t-9.5 50.56V-240H0Zm240 0v-61q0-27.86 14.5-50.93T293-387q44-22 91-33.5t95.53-11.5Q529-432 576-420.5t91 33.5q24 12 38.5 35.07T720-301v61H240Zm528 0v-67.37q0-26.95-9.5-50.79T732-402q17-3 31.5-4.5T792-408q78 0 123 29t45 80v59H768Zm-454-72h332q-7-17-59.5-32.5T480-360q-54 0-106.5 15.5T314-312ZM167.79-456Q138-456 117-477.03q-21-21.02-21-50.55Q96-558 117.03-579q21.02-21 50.55-21Q198-600 219-579.24t21 51.45Q240-498 219.24-477t-51.45 21Zm624 0Q762-456 741-477.03q-21-21.02-21-50.55Q720-558 741.03-579q21.02-21 50.55-21Q822-600 843-579.24t21 51.45Q864-498 843.24-477t-51.45 21ZM479.5-480q-49.5 0-84.5-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85.5q0 49.5-35 84.5t-85.5 35Zm.5-72q20.4 0 34.2-13.8Q528-579.6 528-600q0-20.4-13.8-34.2Q500.4-648 480-648q-20.4 0-34.2 13.8Q432-620.4 432-600q0 20.4 13.8 34.2Q459.6-552 480-552Zm0 240Zm0-288Z" />
+                        </svg>
+                        <span id="participantsBadge" class="control-badge hidden" aria-hidden="true">0</span>
+                    </button>
 
-            <button id="devicesButton" class="control-button hidden" onclick="rc.showDevices()">
-                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
-                    fill="#e3e3e3">
-                    <path
-                        d="m403-96-22-114q-23-9-44.5-21T296-259l-110 37-77-133 87-76q-2-12-3-24t-1-25q0-13 1-25t3-24l-87-76 77-133 110 37q19-16 40.5-28t44.5-21l22-114h154l22 114q23 9 44.5 21t40.5 28l110-37 77 133-87 76q2 12 3 24t1 25q0 13-1 25t-3 24l87 76-77 133-110-37q-19 16-40.5 28T579-210L557-96H403Zm59-72h36l19-99q38-7 71-26t57-48l96 32 18-30-76-67q6-17 9.5-35.5T696-480q0-20-3.5-38.5T683-554l76-67-18-30-96 32q-24-29-57-48t-71-26l-19-99h-36l-19 99q-38 7-71 26t-57 48l-96-32-18 30 76 67q-6 17-9.5 35.5T264-480q0 20 3.5 38.5T277-406l-76 67 18 30 96-32q24 29 57 48t71 26l19 99Zm18-168q60 0 102-42t42-102q0-60-42-102t-102-42q-60 0-102 42t-42 102q0 60 42 102t102 42Zm0-144Z" />
-                </svg>
-            </button>
+                    <button id="recordingButton"
+                        class="control-button hidden w-12 h-12 md:w-14 md:h-14 rounded-full bg-red-500/80 hover:bg-red-500 active:scale-95 flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:shadow-xl"
+                        onclick="toggleRecording()">
+                        <div class="w-3 h-3 rounded-full bg-white"></div>
+                    </button>
 
-            <button id="exitButton" class="control-button hidden" onclick="rc.exit()">
-                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="red">
-                    <path
-                        d="m139-317-79-80q-14-14-14.5-33.5T59-464q79-85 187-134.5T480-648q126 0 234 49.5T901-464q14 14 13.5 33.5T900-397l-79 80q-11 11-28 14t-34-9l-115-82q-9-7-14.5-17.5t-5.5-21.15V-554q-35-11-70.74-16.5Q517.52-576 480-576t-73.26 5.5Q371-565 336-554v121.35q0 10.65-5.5 21.15Q325-401 316-394l-115 82q-17 12-34.5 8.5T139-317Zm125-211q-37 18-71.5 43T127-431l49 49 88-63v-83Zm432 0v83l88 63 49-49q-31-30-65-54.5T696-528Zm-432 0Zm432 0Z" />
-                </svg>
-            </button>
+                    <button id="moreOptionsButton"
+                        class="control-button hidden w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:shadow-xl"
+                        onclick="toggleMoreOptions()">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                            fill="#e3e3e3">
+                            <path
+                                d="M480-160q-33 0-56.5-23.5T400-240q0-33 23.5-56.5T480-320q33 0 56.5 23.5T560-240q0 33-23.5 56.5T480-160Zm0-240q-33 0-56.5-23.5T400-480q0-33 23.5-56.5T480-560q33 0 56.5 23.5T560-480q0 33-23.5 56.5T480-400Zm0-240q-33 0-56.5-23.5T400-720q0-33 23.5-56.5T480-800q33 0 56.5 23.5T560-720q0 33-23.5 56.5T480-640Z" />
+                        </svg>
+                    </button>
+
+                    <button id="startScreenButton"
+                        class="control-button hidden w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:shadow-xl"
+                        onclick="rc.produce(RoomClient.mediaType.screen)">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                            fill="#e3e3e3">
+                            <path
+                                d="M444-336h72v-150l57.12 57.3L624-480 480-624 336-480l51 51 57-57v150ZM168-192q-29.7 0-50.85-21.16Q96-234.32 96-264.04v-432.24Q96-726 117.15-747T168-768h624q29.7 0 50.85 21.16Q864-725.68 864-695.96v432.24Q864-234 842.85-213T792-192H168Zm0-72h624v-432H168v432Zm0 0v-432 432Z" />
+                        </svg>
+                    </button>
+                    <button id="stopScreenButton"
+                        class="control-button hidden w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:shadow-xl"
+                        onclick="rc.closeProducer(RoomClient.mediaType.screen)">
+                        <i class="fas fa-stop"></i>
+                    </button>
+
+                    <button id="devicesButton"
+                        class="control-button hidden w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:shadow-xl"
+                        onclick="rc.showDevices()">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                            fill="#e3e3e3">
+                            <path
+                                d="m403-96-22-114q-23-9-44.5-21T296-259l-110 37-77-133 87-76q-2-12-3-24t-1-25q0-13 1-25t3-24l-87-76 77-133 110 37q19-16 40.5-28t44.5-21l22-114h154l22 114q23 9 44.5 21t40.5 28l110-37 77 133-87 76q2 12 3 24t1 25q0 13-1 25t-3 24l87 76-77 133-110-37q-19 16-40.5 28T579-210L557-96H403Zm59-72h36l19-99q38-7 71-26t57-48l96 32 18-30-76-67q6-17 9.5-35.5T696-480q0-20-3.5-38.5T683-554l76-67-18-30-96 32q-24-29-57-48t-71-26l-19-99h-36l-19 99q-38 7-71 26t-57 48l-96-32-18 30 76 67q-6 17-9.5 35.5T264-480q0 20 3.5 38.5T277-406l-76 67 18 30 96-32q24 29 57 48t71 26l19 99Zm18-168q60 0 102-42t42-102q0-60-42-102t-102-42q-60 0-102 42t-42 102q0 60 42 102t102 42Zm0-144Z" />
+                        </svg>
+                    </button>
+                    <button id="exitButton"
+                        class="hidden  text-white px-6 py-2 rounded-lg flex items-center gap-2 font-medium transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95"
+                        onclick="rc.exit()">
+                        <span class="text-white bg-red-800 rounded-xl px-4 py-2">Leave</span>
+                    </button>
+                </div>
+
+                <!-- End Meeting button on the right -->
+            </div>
 
             <!-- Pose Detection Toggle -->
             <!-- <div class="pose-detection-controls">
@@ -335,24 +634,276 @@
         </div>
     </div>
 
-    <!-- Participants Panel -->
-    <div id="participantsPanel" class="participants-panel hidden">
+    <!-- Participants Panel (toggled from controller) -->
+    <div id="participantsPanel" class="participants-panel hidden" role="dialog" aria-label="Participants"
+        aria-hidden="true" tabindex="-1">
         <div class="participants-header">
-            <h6>Participants</h6>
-            <span class="participants-count" id="participantsCount">0 users</span>
+            <div class="participants-title">
+                <h6>Participants</h6>
+                <span class="participants-count" id="participantsCount">0 users</span>
+            </div>
+            <!-- <button class="participants-close" onclick="toggleParticipants(false)" aria-label="Close participants panel">
+                <i class="fas fa-times"></i>
+            </button> -->
         </div>
-        <div id="participantsList">
+        <div id="participantsList" class="participants-list" role="list">
             <!-- Participants will be dynamically added here -->
         </div>
     </div>
 
     <!-- Toggle button for participants panel -->
-    <button id="toggleParticipantsBtn" class="toggle-participants-btn hidden" onclick="toggleParticipants()">
+    <button id="toggleParticipantsBtn" class="toggle-participants-btn hidden" onclick="toggleParticipants()"
+        aria-label="Toggle participants panel" aria-pressed="false">
         <i class="fas fa-users"></i>
     </button>
 
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="confirm-modal hidden">
+        <div class="confirm-modal-overlay" onclick="closeConfirmModal()"></div>
+        <div class="confirm-modal-content">
+            <div class="confirm-modal-header">
+                <h3 id="confirmModalTitle">Confirm Action</h3>
+                <button class="confirm-modal-close" onclick="closeConfirmModal()" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="confirm-modal-body">
+                <p id="confirmModalMessage">Are you sure you want to proceed?</p>
+            </div>
+            <div class="confirm-modal-footer">
+                <button class="confirm-modal-btn confirm-modal-btn-cancel" onclick="closeConfirmModal()">
+                    Cancel
+                </button>
+                <button class="confirm-modal-btn confirm-modal-btn-confirm" id="confirmModalConfirmBtn">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="/index.js"></script>
 
+    <script>
+        // Lobby preview and device control (kept isolated from call logic)
+        let lobbyPreviewStream = null;
+        let lobbyMicEnabled = false; // default off for privacy
+        let lobbyCamEnabled = true;
+        let lobbyAudioDeviceId = null;
+        let lobbyVideoDeviceId = null;
+
+        // Make lobby settings globally accessible
+        window.lobbyMicEnabled = lobbyMicEnabled;
+        window.lobbyCamEnabled = lobbyCamEnabled;
+        window.lobbyAudioDeviceId = lobbyAudioDeviceId;
+        window.lobbyVideoDeviceId = lobbyVideoDeviceId;
+
+        function updateLobbyName() {
+            try {
+                const el = document.getElementById('lobbyUserName');
+                if (el) el.textContent = window.roomConfig?.username || (typeof username !== 'undefined' ? username || '' : '');
+            } catch { /* noop */ }
+        }
+
+        function setCenterMessage(text) {
+            const center = document.getElementById('lobbyPreviewCenterMsg');
+            if (center) center.textContent = text || '';
+        }
+
+        function showCenterMessage(show) {
+            const center = document.getElementById('lobbyPreviewCenterMsg');
+            if (center) center.style.display = show ? 'flex' : 'none';
+        }
+
+        function getPreviewConstraints() {
+            const video = lobbyCamEnabled
+                ? { deviceId: lobbyVideoDeviceId ? { exact: lobbyVideoDeviceId } : undefined }
+                : false;
+            const audio = lobbyMicEnabled
+                ? { deviceId: lobbyAudioDeviceId ? { exact: lobbyAudioDeviceId } : undefined }
+                : false;
+            return { video, audio };
+        }
+
+        async function startLobbyPreview() {
+            try {
+                // Always recreate to reflect device/toggle changes
+                stopLobbyPreview();
+                const constraints = getPreviewConstraints();
+                if (!constraints.video && !constraints.audio) {
+                    showCenterMessage(true);
+                    setCenterMessage('Camera is off');
+                    return;
+                }
+                setCenterMessage('Camera is starting');
+                showCenterMessage(true);
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                lobbyPreviewStream = stream;
+                const videoEl = document.getElementById('lobbyPreview');
+                if (videoEl) {
+                    videoEl.srcObject = stream;
+                    try { await videoEl.play(); } catch { /* ignore autoplay errors */ }
+                }
+                // Hide message once frames arrive
+                const onCanPlay = () => showCenterMessage(false);
+                if (videoEl) {
+                    if (videoEl.readyState >= 2) {
+                        showCenterMessage(false);
+                    } else {
+                        videoEl.addEventListener('canplay', onCanPlay, { once: true });
+                    }
+                }
+            } catch (error) {
+                console.error('Lobby preview error:', error);
+                setCenterMessage('Camera preview unavailable. Allow access or choose another device.');
+                showCenterMessage(true);
+            }
+        }
+
+        function stopLobbyPreview() {
+            try {
+                if (lobbyPreviewStream) {
+                    lobbyPreviewStream.getTracks().forEach(t => t.stop());
+                    lobbyPreviewStream = null;
+                }
+                const video = document.getElementById('lobbyPreview');
+                if (video) video.srcObject = null;
+            } catch { /* ignore */ }
+        }
+
+        function setToggleIcon(el, onIcon, offIcon, isOn) {
+            if (!el) return;
+            const i = el.querySelector('i');
+            if (!i) return;
+            i.classList.remove(onIcon, offIcon);
+            i.classList.add(isOn ? onIcon : offIcon);
+            el.setAttribute('aria-pressed', String(isOn));
+        }
+
+        async function populateLobbyDevices() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const mics = devices.filter(d => d.kind === 'audioinput');
+                const speakers = devices.filter(d => d.kind === 'audiooutput');
+                const cams = devices.filter(d => d.kind === 'videoinput');
+
+                const micSel = document.getElementById('lobbyMicSelect');
+                const spkSel = document.getElementById('lobbySpeakerSelect');
+                const camSel = document.getElementById('lobbyCameraSelect');
+
+                if (micSel) {
+                    micSel.innerHTML = '';
+                    mics.forEach(d => {
+                        const opt = document.createElement('option');
+                        opt.value = d.deviceId;
+                        opt.textContent = d.label || 'Microphone';
+                        micSel.appendChild(opt);
+                    });
+                    if (!lobbyAudioDeviceId && mics[0]) {
+                        lobbyAudioDeviceId = mics[0].deviceId;
+                        window.lobbyAudioDeviceId = lobbyAudioDeviceId;
+                    }
+                    micSel.value = lobbyAudioDeviceId || '';
+                }
+                if (spkSel) {
+                    spkSel.innerHTML = '';
+                    speakers.forEach(d => {
+                        const opt = document.createElement('option');
+                        opt.value = d.deviceId;
+                        opt.textContent = d.label || 'Speaker';
+                        spkSel.appendChild(opt);
+                    });
+                }
+                if (camSel) {
+                    camSel.innerHTML = '';
+                    cams.forEach(d => {
+                        const opt = document.createElement('option');
+                        opt.value = d.deviceId;
+                        opt.textContent = d.label || 'Camera';
+                        camSel.appendChild(opt);
+                    });
+                    if (!lobbyVideoDeviceId && cams[0]) {
+                        lobbyVideoDeviceId = cams[0].deviceId;
+                        window.lobbyVideoDeviceId = lobbyVideoDeviceId;
+                    }
+                    camSel.value = lobbyVideoDeviceId || '';
+                }
+            } catch (e) {
+                console.warn('Unable to enumerate devices yet:', e);
+            }
+        }
+
+        // Start preview when lobby loads; stop on join/unload/hidden
+        document.addEventListener('DOMContentLoaded', function () {
+            updateLobbyName();
+            populateLobbyDevices().then(startLobbyPreview);
+
+            const joinBtn = document.getElementById('joinButton');
+            if (joinBtn) {
+                joinBtn.addEventListener('click', () => {
+                    stopLobbyPreview();
+                    // Store lobby settings globally so they can be accessed when joining
+                    // Use window variables to ensure we have the latest values
+                    window.lobbySettings = {
+                        micEnabled: window.lobbyMicEnabled !== undefined ? window.lobbyMicEnabled : lobbyMicEnabled,
+                        camEnabled: window.lobbyCamEnabled !== undefined ? window.lobbyCamEnabled : lobbyCamEnabled,
+                        audioDeviceId: window.lobbyAudioDeviceId !== undefined ? window.lobbyAudioDeviceId : lobbyAudioDeviceId,
+                        videoDeviceId: window.lobbyVideoDeviceId !== undefined ? window.lobbyVideoDeviceId : lobbyVideoDeviceId
+                    };
+                });
+            }
+
+            const micBtn = document.getElementById('lobbyMicToggle');
+            const camBtn = document.getElementById('lobbyCamToggle');
+            setToggleIcon(micBtn, 'fa-microphone', 'fa-microphone-slash', lobbyMicEnabled);
+            setToggleIcon(camBtn, 'fa-video', 'fa-video-slash', lobbyCamEnabled);
+
+            if (micBtn) {
+                micBtn.addEventListener('click', async () => {
+                    lobbyMicEnabled = !lobbyMicEnabled;
+                    window.lobbyMicEnabled = lobbyMicEnabled;
+                    setToggleIcon(micBtn, 'fa-microphone', 'fa-microphone-slash', lobbyMicEnabled);
+                    await startLobbyPreview();
+                });
+            }
+            if (camBtn) {
+                camBtn.addEventListener('click', async () => {
+                    lobbyCamEnabled = !lobbyCamEnabled;
+                    window.lobbyCamEnabled = lobbyCamEnabled;
+                    setToggleIcon(camBtn, 'fa-video', 'fa-video-slash', lobbyCamEnabled);
+                    await startLobbyPreview();
+                });
+            }
+
+            const micSel = document.getElementById('lobbyMicSelect');
+            const spkSel = document.getElementById('lobbySpeakerSelect');
+            const camSel = document.getElementById('lobbyCameraSelect');
+            if (micSel) micSel.addEventListener('change', async (e) => {
+                lobbyAudioDeviceId = e.target.value || null;
+                window.lobbyAudioDeviceId = lobbyAudioDeviceId;
+                // Only restart if mic is enabled
+                if (lobbyMicEnabled) await startLobbyPreview();
+            });
+            if (camSel) camSel.addEventListener('change', async (e) => {
+                lobbyVideoDeviceId = e.target.value || null;
+                window.lobbyVideoDeviceId = lobbyVideoDeviceId;
+                if (lobbyCamEnabled) await startLobbyPreview();
+            });
+            if (spkSel && typeof HTMLMediaElement.prototype.setSinkId === 'function') {
+                spkSel.addEventListener('change', (e) => {
+                    const video = document.getElementById('lobbyPreview');
+                    try { video.setSinkId(e.target.value); } catch { /* ignore */ }
+                });
+            }
+
+            navigator.mediaDevices?.addEventListener?.('devicechange', async () => {
+                await populateLobbyDevices();
+            });
+        });
+        window.addEventListener('beforeunload', stopLobbyPreview);
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) stopLobbyPreview();
+        });
+    </script>
 
     <!-- <script>
         // Add pose detection button handler
