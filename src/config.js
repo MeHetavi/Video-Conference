@@ -62,11 +62,10 @@ let externalIp = getLocalIp();
 })();
 
 module.exports = {
-  // Server listen configuration (can be overridden via environment)
-  listenIp: process.env.LISTEN_IP || '0.0.0.0',
-  listenPort: Number(process.env.LISTEN_PORT || 3016),
-  sslCrt: process.env.SSL_CRT_PATH || '../ssl/cert.pem',
-  sslKey: process.env.SSL_KEY_PATH || '../ssl/key.pem',
+  listenIp: '0.0.0.0',
+  listenPort: 3016,
+  sslCrt: '../ssl/cert.pem',
+  sslKey: '../ssl/key.pem',
 
   mediasoup: {
     // Worker settings
@@ -108,8 +107,7 @@ module.exports = {
       listenIps: [
         {
           ip: '0.0.0.0',
-          // External IP announced to clients (env or detected external IP)
-          announcedIp: "34.100.140.55"
+          announcedIp: '34.100.140.55' //'35.200.140.215' // This will be the external IP
         }
       ],
       maxIncomingBitrate: 1500000,
