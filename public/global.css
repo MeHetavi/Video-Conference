@@ -43,6 +43,19 @@ body {
     overflow: hidden;
 }
 
+/* Ensure video grid container is responsive */
+@media (max-width: 640px) {
+    #videoGridContainer {
+        padding: 4px;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+    #videoGridContainer {
+        padding: 6px;
+    }
+}
+
 #localMedia {
     display: flex;
     align-items: center;
@@ -97,6 +110,17 @@ body {
     object-fit: contain;
     pointer-events: none;
     /* Allow clicks to pass through to container */
+}
+
+/* Responsive video container adjustments */
+@media (max-width: 640px) {
+    #remoteVideos .video-container {
+        min-height: 120px;
+    }
+
+    #remoteVideos .video-container video {
+        object-fit: cover;
+    }
 }
 
 /* Pinned video styles */
@@ -213,19 +237,226 @@ body {
     transform: scale(1.05);
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
+/* Ensure local video container doesn't overlap controls */
+@media (max-width: 640px) {
     #localVideoContainer {
-        width: 200px;
-        max-width: 30vw;
-        min-width: 150px;
-        bottom: 12px;
-        right: 12px;
+        bottom: 78px !important;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+    #localVideoContainer {
+        bottom: 82px;
+    }
+}
+
+/* Responsive adjustments */
+/* Mobile devices (up to 640px) */
+@media (max-width: 640px) {
+    #localVideoContainer {
+        width: 120px;
+        max-width: 35vw;
+        min-width: 100px;
+        bottom: 80px;
+        right: 8px;
+        z-index: 25;
     }
 
     #remoteVideos {
         gap: 4px;
         padding: 4px;
+    }
+
+    #videoGridContainer {
+        padding: 4px;
+    }
+
+    #remoteVideos .video-container {
+        border-radius: 8px;
+        min-height: 120px;
+    }
+
+    /* Control buttons - smaller on mobile */
+    #control {
+        padding: 0;
+    }
+
+    .control-button {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+    }
+
+    #control .w-12 {
+        width: 40px !important;
+        height: 40px !important;
+    }
+
+    #control .w-14 {
+        width: 40px !important;
+        height: 40px !important;
+    }
+
+    /* Adjust control bar height on mobile */
+    #control > div {
+        height: 70px !important;
+        padding: 0 8px;
+        gap: 2px;
+    }
+
+    /* Hide some buttons on mobile to save space */
+    #recordingButton,
+    #startScreenButton,
+    #stopScreenButton {
+        display: none !important;
+    }
+
+    /* Video grid - single column on very small screens */
+    #remoteVideos {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Participants panel - full width on mobile */
+    .participants-panel {
+        width: calc(100vw - 1rem) !important;
+        max-width: calc(100vw - 1rem) !important;
+        left: 0.5rem !important;
+        right: 0.5rem !important;
+        transform: none !important;
+    }
+}
+
+/* Tablet devices (641px to 768px) */
+@media (min-width: 641px) and (max-width: 768px) {
+    #localVideoContainer {
+        width: 180px;
+        max-width: 28vw;
+        min-width: 140px;
+        bottom: 12px;
+        right: 12px;
+    }
+
+    #remoteVideos {
+        gap: 6px;
+        padding: 6px;
+    }
+
+    #videoGridContainer {
+        padding: 6px;
+    }
+
+    /* Control buttons - medium size on tablet */
+    .control-button {
+        width: 48px !important;
+        height: 48px !important;
+        min-width: 48px !important;
+    }
+
+    #control .w-12 {
+        width: 48px !important;
+        height: 48px !important;
+    }
+
+    #control .w-14 {
+        width: 48px !important;
+        height: 48px !important;
+    }
+
+    #control > div {
+        gap: 3px;
+    }
+}
+
+/* Small desktop (769px to 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    #localVideoContainer {
+        width: 240px;
+        max-width: 25vw;
+        min-width: 180px;
+    }
+
+    #remoteVideos {
+        gap: 6px;
+        padding: 6px;
+    }
+}
+
+/* Large screens (1025px and above) - default styles apply */
+@media (min-width: 1025px) {
+    #localVideoContainer {
+        width: 300px;
+        max-width: 25vw;
+        min-width: 200px;
+    }
+}
+
+/* Landscape mobile orientation */
+@media (max-width: 768px) and (orientation: landscape) {
+    #localVideoContainer {
+        width: 150px;
+        max-width: 20vw;
+        min-width: 120px;
+        bottom: 70px;
+    }
+
+    #remoteVideos {
+        gap: 4px;
+        padding: 4px;
+    }
+
+    /* Adjust grid for landscape - can fit more columns */
+    #remoteVideos {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* Very small screens (up to 480px) */
+@media (max-width: 480px) {
+    #localVideoContainer {
+        width: 100px;
+        max-width: 40vw;
+        min-width: 80px;
+        bottom: 68px !important;
+        right: 4px;
+    }
+
+    #remoteVideos .video-container {
+        min-height: 100px;
+        border-radius: 6px;
+    }
+
+    #videoGridContainer {
+        padding: 2px;
+    }
+
+    #remoteVideos {
+        gap: 2px;
+        padding: 2px;
+    }
+
+    /* Smaller control buttons on very small screens */
+    .control-button {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+    }
+
+    #control > div {
+        height: 60px !important;
+        gap: 2px;
+        padding: 0 4px;
+    }
+
+    #control .w-12,
+    #control .w-14 {
+        width: 36px !important;
+        height: 36px !important;
+    }
+
+    /* Hide less important buttons on very small screens */
+    #handRaiseButton,
+    #moreOptionsButton {
+        display: none !important;
     }
 }
 
@@ -439,6 +670,22 @@ body {
     .notification {
         min-width: auto;
         max-width: calc(100vw - 20px);
+        padding: 12px 16px;
+        min-width: 280px;
+    }
+
+    .notification-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+    }
+
+    .notification-title {
+        font-size: 13px;
+    }
+
+    .notification-message {
+        font-size: 12px;
     }
 }
 
@@ -623,13 +870,24 @@ body {
 
 @media (max-width: 640px) {
     .participants-panel {
-        width: calc(100vw - 1.5rem);
-        max-width: calc(100vw - 1.5rem);
+        width: calc(100vw - 1.5rem) !important;
+        max-width: calc(100vw - 1.5rem) !important;
+        left: 0.75rem !important;
+        right: 0.75rem !important;
+        transform: none !important;
+        max-height: 50vh;
+        bottom: 80px !important;
+        top: auto !important;
     }
 
     .participant-item {
         flex-direction: column;
         align-items: flex-start;
+        padding: 10px;
+    }
+
+    .participants-header {
+        padding-bottom: 8px;
     }
 }
 

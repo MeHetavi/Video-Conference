@@ -375,10 +375,10 @@
             <div id="login" class="w-full flex items-center justify-center mt-10 p-3">
 
                 <!-- Lobby layout -->
-                <div class="grid grid-cols-1 md:grid-cols-[1fr_480px] items-start w-full max-w-7xl mx-auto ">
+                <div class="grid grid-cols-1 md:grid-cols-[1fr_480px] items-start w-full max-w-7xl mx-auto gap-4 md:gap-6">
                     <!-- Left: Preview Card -->
-                    <div>
-                        <div class="relative rounded-2xl overflow-hidden bg-neutral-900 aspect-video">
+                    <div class="w-full">
+                        <div class="relative rounded-2xl overflow-hidden bg-neutral-900 aspect-video w-full">
                             <video id="lobbyPreview" autoplay muted playsinline
                                 class="w-full h-full object-cover bg-black"></video>
                             <!-- Top bar -->
@@ -406,7 +406,7 @@
 
                         </div>
                         <!-- Bottom device selectors -->
-                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 items-center">
                             <select id="lobbyMicSelect"
                                 class="w-full h-10 px-4 rounded-full bg-white/80 border border-white/40 text-[#3E2C1C] backdrop-blur min-w-0">
                                 <option>Loading microphones…</option>
@@ -423,7 +423,7 @@
                     </div>
                     <!-- Right: Join Panel -->
                     <div
-                        class="mx-auto mt-2 md:my-auto border border-white/30 text-center rounded-2xl w-80 p-4 shadow-lg bg-white/60 modern-card">
+                        class="mx-auto mt-2 md:my-auto border border-white/30 text-center rounded-2xl w-full max-w-80 p-4 shadow-lg bg-white/60 modern-card">
                         <div class="text-2xl font-semibold text-[#1B4332]">Ready to join?</div>
                         <!-- User Profile Display -->
                         <div id="userProfilePic" class="mt-4 flex justify-center items-center" style="display: none;">
@@ -489,7 +489,7 @@
             class="hidden fixed bottom-0 left-0 right-0 w-full backdrop-blur-xl border-t border-white/20 shadow-2xl z-50">
             <!-- Main controls bar -->
             <div
-                class="w-full h-20 flex items-center justify-between px-4 gap-4  bg-[#1B4332]/50 backdrop-blur-xl rounded-t-2xl fixed bottom-0">
+                class="w-full h-20 md:h-20 sm:h-16 flex items-center justify-between px-2 sm:px-4 gap-2 sm:gap-4 bg-[#1B4332]/50 backdrop-blur-xl rounded-t-2xl fixed bottom-0">
                 <!-- Meeting duration on the left -->
                 <!-- <div id="meetingDuration" class="text-white text-sm font-medium min-w-[80px]">
                     00:16:54

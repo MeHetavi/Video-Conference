@@ -53,6 +53,12 @@ function updateLayout() {
     localVideoTile.style.position = 'relative';
   }
 
+  // Get screen width for responsive layout
+  const screenWidth = window.innerWidth;
+  const isMobile = screenWidth <= 640;
+  const isTablet = screenWidth > 640 && screenWidth <= 768;
+  const isSmallDesktop = screenWidth > 768 && screenWidth <= 1024;
+
   // Calculate grid layout based on number of remote participants (Google Meet style)
   // Optimize to minimize empty spaces
   // If there are pinned videos, show them prominently at the top
@@ -62,6 +68,25 @@ function updateLayout() {
   let gridColumns = 1;
   let gridRows = 1;
   let useCustomLayout = false;
+  
+  // Responsive column calculation based on screen size
+  const getMaxColumns = () => {
+    if (isMobile) {
+      // Mobile: 1 column for very small, 2 for landscape
+      return window.innerHeight > window.innerWidth ? 1 : 2;
+    } else if (isTablet) {
+      // Tablet: 2-3 columns
+      return 2;
+    } else if (isSmallDesktop) {
+      // Small desktop: 3 columns
+      return 3;
+    } else {
+      // Large desktop: 4 columns
+      return 4;
+    }
+  };
+
+  const maxColumns = getMaxColumns();
 
   if (participantCount === 0) {
     // No remote participants - show empty grid, local video will be in overlay
@@ -70,8 +95,8 @@ function updateLayout() {
     remoteContainer.style.display = 'grid';
     remoteContainer.style.gridTemplateColumns = '1fr';
     remoteContainer.style.gridTemplateRows = '1fr';
-    remoteContainer.style.gap = '8px';
-    remoteContainer.style.padding = '8px';
+    remoteContainer.style.gap = isMobile ? '4px' : '8px';
+    remoteContainer.style.padding = isMobile ? '4px' : '8px';
     remoteContainer.style.width = '100%';
     remoteContainer.style.height = '100%';
     remoteContainer.style.minHeight = '0';
@@ -80,80 +105,89 @@ function updateLayout() {
     gridColumns = 1;
     gridRows = 1;
   } else if (participantCount === 2) {
-    gridColumns = 2;
+    gridColumns = Math.min(2, maxColumns);
     gridRows = 1;
   } else if (participantCount === 3) {
     // Special layout: 2 videos in one column (2 rows), 1 video in entire column
-    useCustomLayout = true;
-    gridColumns = 2;
-    gridRows = 2;
+    // Only use custom layout on larger screens
+    if (maxColumns >= 2) {
+      useCustomLayout = true;
+      gridColumns = 2;
+      gridRows = 2;
+    } else {
+      // Mobile: stack all 3 vertically
+      gridColumns = 1;
+      gridRows = 3;
+    }
   } else if (participantCount === 4) {
-    gridColumns = 2;
+    gridColumns = Math.min(2, maxColumns);
     gridRows = 2;
   } else if (participantCount === 5) {
     // Optimized: 3 videos in first row, 2 videos in second row
-    gridColumns = 3;
+    gridColumns = Math.min(3, maxColumns);
     gridRows = 2;
   } else if (participantCount === 6) {
-    gridColumns = 3;
+    gridColumns = Math.min(3, maxColumns);
     gridRows = 2;
   } else if (participantCount === 7) {
     // Optimized: 4 videos in first row, 3 videos in second row
-    gridColumns = 4;
+    gridColumns = Math.min(4, maxColumns);
     gridRows = 2;
   } else if (participantCount === 8) {
-    gridColumns = 4;
+    gridColumns = Math.min(4, maxColumns);
     gridRows = 2;
   } else if (participantCount === 9) {
-    gridColumns = 3;
+    gridColumns = Math.min(3, maxColumns);
     gridRows = 3;
   } else if (participantCount === 10) {
     // Optimized: 4 videos in first row, 3 videos in second row, 3 videos in third row
-    gridColumns = 4;
+    gridColumns = Math.min(4, maxColumns);
     gridRows = 3;
   } else if (participantCount === 11) {
     // Optimized: 4 videos in first row, 4 videos in second row, 3 videos in third row
-    gridColumns = 4;
+    gridColumns = Math.min(4, maxColumns);
     gridRows = 3;
   } else if (participantCount === 12) {
-    gridColumns = 4;
+    gridColumns = Math.min(4, maxColumns);
     gridRows = 3;
   } else if (participantCount === 13) {
     // Optimized: 4 videos per row for first 3 rows, 1 video in fourth row
-    gridColumns = 4;
+    gridColumns = Math.min(4, maxColumns);
     gridRows = 4;
   } else if (participantCount === 14) {
     // Optimized: 4 videos per row for first 3 rows, 2 videos in fourth row
-    gridColumns = 4;
+    gridColumns = Math.min(4, maxColumns);
     gridRows = 4;
   } else if (participantCount === 15) {
     // Optimized: 4 videos per row for first 3 rows, 3 videos in fourth row
-    gridColumns = 4;
+    gridColumns = Math.min(4, maxColumns);
     gridRows = 4;
   } else if (participantCount === 16) {
-    gridColumns = 4;
+    gridColumns = Math.min(4, maxColumns);
     gridRows = 4;
   } else {
-    // For more than 16, use a scrollable grid with 4 columns
-    gridColumns = 4;
-    gridRows = Math.ceil(participantCount / 4);
+    // For more than 16, use a scrollable grid with responsive columns
+    gridColumns = maxColumns;
+    gridRows = Math.ceil(participantCount / gridColumns);
     remoteContainer.style.overflowY = 'auto';
-    remoteContainer.style.maxHeight = 'calc(100vh - 100px)';
+    const controlHeight = isMobile ? 70 : 80;
+    remoteContainer.style.maxHeight = `calc(100vh - ${controlHeight}px)`;
   }
 
   // Apply grid layout
   if (participantCount > 0) {
-    // If there are pinned videos, create a special layout with sidebar
-    if (pinnedCount > 0) {
-      // Create two-column layout: pinned video(s) on left, others in scrollable sidebar on right
-      remoteContainer.style.display = 'flex';
-      remoteContainer.style.flexDirection = 'row';
-      remoteContainer.style.gap = '8px';
-      remoteContainer.style.padding = '8px';
-      remoteContainer.style.width = '100%';
-      remoteContainer.style.height = '100%';
-      remoteContainer.style.minHeight = '0';
-      remoteContainer.style.overflow = 'hidden';
+      // If there are pinned videos, create a special layout with sidebar
+      if (pinnedCount > 0) {
+        // Create two-column layout: pinned video(s) on left, others in scrollable sidebar on right
+        // On mobile, stack vertically instead of horizontally
+        remoteContainer.style.display = 'flex';
+        remoteContainer.style.flexDirection = isMobile ? 'column' : 'row';
+        remoteContainer.style.gap = isMobile ? '4px' : '8px';
+        remoteContainer.style.padding = isMobile ? '4px' : '8px';
+        remoteContainer.style.width = '100%';
+        remoteContainer.style.height = '100%';
+        remoteContainer.style.minHeight = '0';
+        remoteContainer.style.overflow = 'hidden';
 
       // Create main area for pinned video (only one can be pinned)
       let pinnedArea = remoteContainer.querySelector('.pinned-videos-area');
@@ -164,11 +198,23 @@ function updateLayout() {
         pinnedArea.style.minWidth = '0';
         pinnedArea.style.display = 'flex';
         pinnedArea.style.flexDirection = 'column';
-        pinnedArea.style.gap = '8px';
+        pinnedArea.style.gap = isMobile ? '4px' : '8px';
         pinnedArea.style.overflow = 'hidden';
+        if (isMobile) {
+          pinnedArea.style.minHeight = '200px';
+          pinnedArea.style.maxHeight = '40vh';
+        }
         remoteContainer.appendChild(pinnedArea);
       } else {
         pinnedArea.style.flexDirection = 'column';
+        pinnedArea.style.gap = isMobile ? '4px' : '8px';
+        if (isMobile) {
+          pinnedArea.style.minHeight = '200px';
+          pinnedArea.style.maxHeight = '40vh';
+        } else {
+          pinnedArea.style.minHeight = '';
+          pinnedArea.style.maxHeight = '';
+        }
       }
 
       // Reset all tiles first to clear any previous layout styles
@@ -204,17 +250,61 @@ function updateLayout() {
       if (!sidebar) {
         sidebar = document.createElement('div');
         sidebar.className = 'unpinned-videos-sidebar';
-        sidebar.style.width = '300px';
-        sidebar.style.minWidth = '250px';
-        sidebar.style.maxWidth = '400px';
+        // Responsive sidebar width
+        if (isMobile) {
+          sidebar.style.width = '100%';
+          sidebar.style.minWidth = '100%';
+          sidebar.style.maxWidth = '100%';
+          sidebar.style.borderLeft = 'none';
+          sidebar.style.borderTop = '1px solid rgba(255, 255, 255, 0.2)';
+          sidebar.style.paddingLeft = '0';
+          sidebar.style.paddingTop = '8px';
+        } else if (isTablet) {
+          sidebar.style.width = '200px';
+          sidebar.style.minWidth = '180px';
+          sidebar.style.maxWidth = '250px';
+        } else {
+          sidebar.style.width = '300px';
+          sidebar.style.minWidth = '250px';
+          sidebar.style.maxWidth = '400px';
+        }
         sidebar.style.display = 'flex';
         sidebar.style.flexDirection = 'column';
-        sidebar.style.gap = '8px';
+        sidebar.style.gap = isMobile ? '4px' : '8px';
         sidebar.style.overflowY = 'auto';
         sidebar.style.overflowX = 'hidden';
-        sidebar.style.borderLeft = '1px solid rgba(255, 255, 255, 0.2)';
-        sidebar.style.paddingLeft = '8px';
+        if (!isMobile) {
+          sidebar.style.borderLeft = '1px solid rgba(255, 255, 255, 0.2)';
+          sidebar.style.paddingLeft = '8px';
+        }
         remoteContainer.appendChild(sidebar);
+      } else {
+        // Update existing sidebar styles for responsiveness
+        if (isMobile) {
+          sidebar.style.width = '100%';
+          sidebar.style.minWidth = '100%';
+          sidebar.style.maxWidth = '100%';
+          sidebar.style.borderLeft = 'none';
+          sidebar.style.borderTop = '1px solid rgba(255, 255, 255, 0.2)';
+          sidebar.style.paddingLeft = '0';
+          sidebar.style.paddingTop = '8px';
+        } else if (isTablet) {
+          sidebar.style.width = '200px';
+          sidebar.style.minWidth = '180px';
+          sidebar.style.maxWidth = '250px';
+          sidebar.style.borderLeft = '1px solid rgba(255, 255, 255, 0.2)';
+          sidebar.style.borderTop = 'none';
+          sidebar.style.paddingLeft = '8px';
+          sidebar.style.paddingTop = '0';
+        } else {
+          sidebar.style.width = '300px';
+          sidebar.style.minWidth = '250px';
+          sidebar.style.maxWidth = '400px';
+          sidebar.style.borderLeft = '1px solid rgba(255, 255, 255, 0.2)';
+          sidebar.style.borderTop = 'none';
+          sidebar.style.paddingLeft = '8px';
+          sidebar.style.paddingTop = '0';
+        }
       }
 
       // Clear and add ALL unpinned videos to sidebar (including previously pinned ones)
@@ -225,8 +315,16 @@ function updateLayout() {
         tile.style.flex = '';
         tile.style.width = '100%';
         tile.style.aspectRatio = '16/9';
-        tile.style.minHeight = '150px';
-        tile.style.maxHeight = '250px';
+        if (isMobile) {
+          tile.style.minHeight = '120px';
+          tile.style.maxHeight = '180px';
+        } else if (isTablet) {
+          tile.style.minHeight = '140px';
+          tile.style.maxHeight = '220px';
+        } else {
+          tile.style.minHeight = '150px';
+          tile.style.maxHeight = '250px';
+        }
         tile.style.flexShrink = '0';
         tile.style.height = '';
         sidebar.appendChild(tile);
@@ -292,8 +390,8 @@ function updateLayout() {
       remoteContainer.style.display = 'grid';
       remoteContainer.style.gridTemplateColumns = `repeat(${gridColumns}, 1fr)`;
       remoteContainer.style.gridTemplateRows = `repeat(${gridRows}, 1fr)`;
-      remoteContainer.style.gap = '8px';
-      remoteContainer.style.padding = '8px';
+      remoteContainer.style.gap = isMobile ? '4px' : (isTablet ? '6px' : '8px');
+      remoteContainer.style.padding = isMobile ? '4px' : (isTablet ? '6px' : '8px');
       remoteContainer.style.width = '100%';
       remoteContainer.style.height = '100%';
       remoteContainer.style.minHeight = '0';
@@ -339,10 +437,18 @@ function updateLayout() {
   });
 
   // Explicitly set the height of the video container to ensure it stays above controls
-  const controlHeight = 80; // Fixed control height
+  // Responsive control height
+  const controlHeight = isMobile ? 70 : (isTablet ? 75 : 80);
   const videoMedia = document.getElementById('videoMedia');
   if (videoMedia) {
     videoMedia.style.height = `calc(100vh - ${controlHeight}px)`;
+  }
+
+  // Update local video container position for mobile
+  const localVideoContainerElement = document.getElementById('localVideoContainer');
+  if (localVideoContainerElement && isMobile) {
+    // Ensure local video doesn't overlap with controls on mobile
+    localVideoContainerElement.style.bottom = `${controlHeight + 8}px`;
   }
 }
 
