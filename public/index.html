@@ -442,7 +442,8 @@
                                 class="modern-input w-full px-4 py-2 rounded-lg ring-1 ring-[#6e36136c] focus:ring-2 focus:ring-[#1B4332] focus:border-transparent transition-all duration-200" />
                         </div>
                         <div class="mt-6">
-                            <button id="joinButton" class="w-full bg-[#1B4332] text-white rounded-xl p-2">
+                            <button id="joinButton" class="w-full bg-[#1B4332] text-white rounded-xl p-2"
+                                onclick="joinRoom(nameInput.value, roomidInput.value)">
                                 Join Now
                             </button>
                         </div>
@@ -850,16 +851,6 @@
                         audioDeviceId: window.lobbyAudioDeviceId !== undefined ? window.lobbyAudioDeviceId : lobbyAudioDeviceId,
                         videoDeviceId: window.lobbyVideoDeviceId !== undefined ? window.lobbyVideoDeviceId : lobbyVideoDeviceId
                     };
-                    // Call joinRoom with the form values
-                    const nameInput = document.getElementById('nameInput');
-                    const roomidInput = document.getElementById('roomidInput');
-                    const name = nameInput ? nameInput.value : '';
-                    const roomId = roomidInput ? roomidInput.value : '';
-                    if (window.joinRoom) {
-                        window.joinRoom(name, roomId);
-                    } else {
-                        console.error('joinRoom function not available');
-                    }
                 });
             }
 

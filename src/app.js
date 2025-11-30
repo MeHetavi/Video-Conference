@@ -50,10 +50,25 @@ app.get('/config.js', (req, res) => {
 })
 app.set('trust proxy', true)
 
-app.use(express.static(path.join(__dirname, '..', 'public')))
+// Serve static files - this must come before the catch-all route
+const publicPath = path.join(__dirname, '..', 'public');
+app.use(express.static(publicPath))
 
-app.get('/:roomId/:username?/:isTrainer?', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+// Catch-all route for room pages - exclude static file requests
+app.get('/:roomId/:username?/:isTrainer?', (req, res, next) => {
+  const requestedPath = req.path;
+
+  // Skip if this looks like a static file request (has file extension)
+  // Static middleware should have already handled these, but this prevents route matching
+  const hasFileExtension = /\.(js|css|json|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|map)$/i.test(requestedPath);
+
+  // Skip socket.io paths
+  if (hasFileExtension || requestedPath.startsWith('/socket.io/')) {
+    return next(); // Let it 404 or be handled by other middleware
+  }
+
+  // Serve index.html for SPA routing (room pages)
+  res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 httpsServer.listen(config.listenPort, () => {
