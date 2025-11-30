@@ -48,6 +48,7 @@ app.get('/config.js', (req, res) => {
     `window.API_BASE_URL = '${apiBaseUrl.replace(/'/g, "\\'")}';\n`
   )
 })
+app.set('trust proxy', true)
 
 app.use(express.static(path.join(__dirname, '..', 'public')))
 
