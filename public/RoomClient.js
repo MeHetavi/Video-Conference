@@ -457,6 +457,88 @@ function updateLayout() {
         return !youIndicator && !nameElement.textContent.includes('(You)');
       });
 
+      // Recalculate grid layout parameters based on actual tile count after moving
+      const actualParticipantCount = remoteTilesAfterMove.length;
+      let actualGridColumns = 1;
+      let actualGridRows = 1;
+      let actualUseCustomLayout = false;
+
+      if (actualParticipantCount === 0) {
+        actualGridColumns = 1;
+        actualGridRows = 1;
+      } else if (actualParticipantCount === 1) {
+        actualGridColumns = 1;
+        actualGridRows = 1;
+      } else if (actualParticipantCount === 2) {
+        if (isMobile) {
+          actualGridColumns = 1;
+          actualGridRows = 2;
+        } else {
+          actualGridColumns = Math.min(2, maxColumns);
+          actualGridRows = 1;
+        }
+      } else if (actualParticipantCount === 3) {
+        if (isMobile) {
+          actualUseCustomLayout = true;
+          actualGridColumns = 2;
+          actualGridRows = 2;
+        } else if (maxColumns >= 2) {
+          actualUseCustomLayout = true;
+          actualGridColumns = 2;
+          actualGridRows = 2;
+        } else {
+          actualGridColumns = 1;
+          actualGridRows = 3;
+        }
+      } else if (actualParticipantCount === 4) {
+        if (isMobile) {
+          actualGridColumns = 2;
+          actualGridRows = 2;
+        } else {
+          actualGridColumns = Math.min(2, maxColumns);
+          actualGridRows = 2;
+        }
+      } else if (actualParticipantCount === 5) {
+        actualGridColumns = Math.min(3, maxColumns);
+        actualGridRows = 2;
+      } else if (actualParticipantCount === 6) {
+        actualGridColumns = Math.min(3, maxColumns);
+        actualGridRows = 2;
+      } else if (actualParticipantCount === 7) {
+        actualGridColumns = Math.min(4, maxColumns);
+        actualGridRows = 2;
+      } else if (actualParticipantCount === 8) {
+        actualGridColumns = Math.min(4, maxColumns);
+        actualGridRows = 2;
+      } else if (actualParticipantCount === 9) {
+        actualGridColumns = Math.min(3, maxColumns);
+        actualGridRows = 3;
+      } else if (actualParticipantCount === 10) {
+        actualGridColumns = Math.min(4, maxColumns);
+        actualGridRows = 3;
+      } else if (actualParticipantCount === 11) {
+        actualGridColumns = Math.min(4, maxColumns);
+        actualGridRows = 3;
+      } else if (actualParticipantCount === 12) {
+        actualGridColumns = Math.min(4, maxColumns);
+        actualGridRows = 3;
+      } else if (actualParticipantCount === 13) {
+        actualGridColumns = Math.min(4, maxColumns);
+        actualGridRows = 4;
+      } else if (actualParticipantCount === 14) {
+        actualGridColumns = Math.min(4, maxColumns);
+        actualGridRows = 4;
+      } else if (actualParticipantCount === 15) {
+        actualGridColumns = Math.min(4, maxColumns);
+        actualGridRows = 4;
+      } else if (actualParticipantCount === 16) {
+        actualGridColumns = Math.min(4, maxColumns);
+        actualGridRows = 4;
+      } else {
+        actualGridColumns = maxColumns;
+        actualGridRows = Math.ceil(actualParticipantCount / actualGridColumns);
+      }
+
       // Reset all tile styles before applying grid layout
       remoteTilesAfterMove.forEach(tile => {
         tile.style.gridArea = '';
@@ -475,18 +557,18 @@ function updateLayout() {
       remoteContainer.style.display = 'grid';
       remoteContainer.style.flexDirection = '';
       remoteContainer.style.flex = '';
-      remoteContainer.style.gridTemplateColumns = `repeat(${gridColumns}, 1fr)`;
-      remoteContainer.style.gridTemplateRows = `repeat(${gridRows}, 1fr)`;
+      remoteContainer.style.gridTemplateColumns = `repeat(${actualGridColumns}, 1fr)`;
+      remoteContainer.style.gridTemplateRows = `repeat(${actualGridRows}, 1fr)`;
       remoteContainer.style.gap = isMobile ? '4px' : (isTablet ? '6px' : '8px');
       remoteContainer.style.padding = isMobile ? '4px' : (isTablet ? '6px' : '8px');
       remoteContainer.style.width = '100%';
       remoteContainer.style.height = '100%';
       remoteContainer.style.minHeight = '0';
       remoteContainer.style.overflowX = 'hidden';
-      remoteContainer.style.overflowY = participantCount > 16 ? 'auto' : 'hidden';
+      remoteContainer.style.overflowY = actualParticipantCount > 16 ? 'auto' : 'hidden';
 
       // Apply custom layout for 3 participants
-      if (useCustomLayout && remoteTilesAfterMove.length === 3) {
+      if (actualUseCustomLayout && remoteTilesAfterMove.length === 3) {
         if (isMobile) {
           // Mobile: 2 in first row, 1 in second row
           remoteTilesAfterMove[0].style.gridArea = '1 / 1 / 2 / 2'; // Top-left
@@ -510,14 +592,14 @@ function updateLayout() {
         
         // For 3-video layout on mobile, the bottom video spans 2 columns
         // Remove aspect ratio constraint to let it fill the grid cell properly
-        if (useCustomLayout && remoteTilesAfterMove.length === 3 && isMobile && index === 2) {
+        if (actualUseCustomLayout && remoteTilesAfterMove.length === 3 && isMobile && index === 2) {
           // Bottom video: let grid cell determine size, video will use object-fit: contain
           tile.style.aspectRatio = '';
         } else {
           tile.style.aspectRatio = '16/9';
         }
         
-        if (!useCustomLayout || remoteTilesAfterMove.length !== 3) {
+        if (!actualUseCustomLayout || remoteTilesAfterMove.length !== 3) {
           tile.style.gridArea = '';
         }
       });
