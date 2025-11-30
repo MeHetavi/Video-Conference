@@ -187,12 +187,6 @@ async function joinRoom(name, room_id) {
   addListeners();
 }
 
-// Explicitly attach joinRoom to window for global access (fixes production "function not found" issue)
-// This ensures the function is available when called from inline onclick handlers
-if (typeof window !== 'undefined') {
-  window.joinRoom = joinRoom;
-}
-
 // Helper function to get token from URL (if available)
 function getTokenFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
