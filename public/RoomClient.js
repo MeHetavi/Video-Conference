@@ -72,8 +72,9 @@ function updateLayout() {
   // Responsive column calculation based on screen size
   const getMaxColumns = () => {
     if (isMobile) {
-      // Mobile: 1 column for very small, 2 for landscape
-      return window.innerHeight > window.innerWidth ? 1 : 2;
+      // Mobile portrait: 2 columns max (for 3+ videos), 1 column for 2 videos
+      // Mobile landscape: 2 columns
+      return window.innerHeight > window.innerWidth ? 2 : 2;
     } else if (isTablet) {
       // Tablet: 2-3 columns
       return 2;
@@ -87,6 +88,7 @@ function updateLayout() {
   };
 
   const maxColumns = getMaxColumns();
+  const isMobilePortrait = isMobile && window.innerHeight > window.innerWidth;
 
   if (participantCount === 0) {
     // No remote participants - show empty grid, local video will be in overlay
@@ -105,70 +107,164 @@ function updateLayout() {
     gridColumns = 1;
     gridRows = 1;
   } else if (participantCount === 2) {
-    gridColumns = Math.min(2, maxColumns);
-    gridRows = 1;
+    // On mobile portrait: single column (2 rows), otherwise 2 columns
+    if (isMobilePortrait) {
+      gridColumns = 1;
+      gridRows = 2;
+    } else {
+      gridColumns = Math.min(2, maxColumns);
+      gridRows = 1;
+    }
   } else if (participantCount === 3) {
-    // Special layout: 2 videos in one column (2 rows), 1 video in entire column
-    // Only use custom layout on larger screens
-    if (maxColumns >= 2) {
+    // On mobile portrait: 2 columns, 2 rows (2 on top, 1 on bottom)
+    if (isMobilePortrait) {
       useCustomLayout = true;
       gridColumns = 2;
       gridRows = 2;
     } else {
-      // Mobile: stack all 3 vertically
-      gridColumns = 1;
-      gridRows = 3;
+      // Larger screens: 2 videos in one column (2 rows), 1 video in entire column
+      if (maxColumns >= 2) {
+        useCustomLayout = true;
+        gridColumns = 2;
+        gridRows = 2;
+      } else {
+        gridColumns = 1;
+        gridRows = 3;
+      }
     }
   } else if (participantCount === 4) {
-    gridColumns = Math.min(2, maxColumns);
-    gridRows = 2;
+    // On mobile portrait: 2 columns, 2 rows
+    if (isMobilePortrait) {
+      gridColumns = 2;
+      gridRows = 2;
+    } else {
+      gridColumns = Math.min(2, maxColumns);
+      gridRows = 2;
+    }
   } else if (participantCount === 5) {
-    // Optimized: 3 videos in first row, 2 videos in second row
-    gridColumns = Math.min(3, maxColumns);
-    gridRows = 2;
+    // On mobile portrait: 2 columns, 3 rows (2-2-1 pattern)
+    if (isMobilePortrait) {
+      gridColumns = 2;
+      gridRows = 3;
+    } else {
+      // Larger screens: 3 videos in first row, 2 videos in second row
+      gridColumns = Math.min(3, maxColumns);
+      gridRows = 2;
+    }
   } else if (participantCount === 6) {
-    gridColumns = Math.min(3, maxColumns);
-    gridRows = 2;
+    // On mobile portrait: 2 columns, 3 rows
+    if (isMobilePortrait) {
+      gridColumns = 2;
+      gridRows = 3;
+    } else {
+      gridColumns = Math.min(3, maxColumns);
+      gridRows = 2;
+    }
   } else if (participantCount === 7) {
-    // Optimized: 4 videos in first row, 3 videos in second row
-    gridColumns = Math.min(4, maxColumns);
-    gridRows = 2;
+    // On mobile portrait: 2 columns, 4 rows (2-2-2-1 pattern)
+    if (isMobilePortrait) {
+      gridColumns = 2;
+      gridRows = 4;
+    } else {
+      // Larger screens: 4 videos in first row, 3 videos in second row
+      gridColumns = Math.min(4, maxColumns);
+      gridRows = 2;
+    }
   } else if (participantCount === 8) {
-    gridColumns = Math.min(4, maxColumns);
-    gridRows = 2;
+    // On mobile portrait: 2 columns, 4 rows
+    if (isMobilePortrait) {
+      gridColumns = 2;
+      gridRows = 4;
+    } else {
+      gridColumns = Math.min(4, maxColumns);
+      gridRows = 2;
+    }
   } else if (participantCount === 9) {
-    gridColumns = Math.min(3, maxColumns);
-    gridRows = 3;
+    // On mobile portrait: 2 columns, 5 rows (2-2-2-2-1 pattern)
+    if (isMobilePortrait) {
+      gridColumns = 2;
+      gridRows = 5;
+    } else {
+      gridColumns = Math.min(3, maxColumns);
+      gridRows = 3;
+    }
   } else if (participantCount === 10) {
-    // Optimized: 4 videos in first row, 3 videos in second row, 3 videos in third row
-    gridColumns = Math.min(4, maxColumns);
-    gridRows = 3;
+    // On mobile portrait: 2 columns, 5 rows
+    if (isMobilePortrait) {
+      gridColumns = 2;
+      gridRows = 5;
+    } else {
+      // Larger screens: 4 videos in first row, 3 videos in second row, 3 videos in third row
+      gridColumns = Math.min(4, maxColumns);
+      gridRows = 3;
+    }
   } else if (participantCount === 11) {
-    // Optimized: 4 videos in first row, 4 videos in second row, 3 videos in third row
-    gridColumns = Math.min(4, maxColumns);
-    gridRows = 3;
+    // On mobile portrait: 2 columns, 6 rows (2-2-2-2-2-1 pattern)
+    if (isMobilePortrait) {
+      gridColumns = 2;
+      gridRows = 6;
+    } else {
+      // Larger screens: 4 videos in first row, 4 videos in second row, 3 videos in third row
+      gridColumns = Math.min(4, maxColumns);
+      gridRows = 3;
+    }
   } else if (participantCount === 12) {
-    gridColumns = Math.min(4, maxColumns);
-    gridRows = 3;
+    // On mobile portrait: 2 columns, 6 rows
+    if (isMobilePortrait) {
+      gridColumns = 2;
+      gridRows = 6;
+    } else {
+      gridColumns = Math.min(4, maxColumns);
+      gridRows = 3;
+    }
   } else if (participantCount === 13) {
-    // Optimized: 4 videos per row for first 3 rows, 1 video in fourth row
-    gridColumns = Math.min(4, maxColumns);
-    gridRows = 4;
+    // On mobile portrait: 2 columns, 7 rows
+    if (isMobilePortrait) {
+      gridColumns = 2;
+      gridRows = 7;
+    } else {
+      // Larger screens: 4 videos per row for first 3 rows, 1 video in fourth row
+      gridColumns = Math.min(4, maxColumns);
+      gridRows = 4;
+    }
   } else if (participantCount === 14) {
-    // Optimized: 4 videos per row for first 3 rows, 2 videos in fourth row
-    gridColumns = Math.min(4, maxColumns);
-    gridRows = 4;
+    // On mobile portrait: 2 columns, 7 rows
+    if (isMobilePortrait) {
+      gridColumns = 2;
+      gridRows = 7;
+    } else {
+      // Larger screens: 4 videos per row for first 3 rows, 2 videos in fourth row
+      gridColumns = Math.min(4, maxColumns);
+      gridRows = 4;
+    }
   } else if (participantCount === 15) {
-    // Optimized: 4 videos per row for first 3 rows, 3 videos in fourth row
-    gridColumns = Math.min(4, maxColumns);
-    gridRows = 4;
+    // On mobile portrait: 2 columns, 8 rows
+    if (isMobilePortrait) {
+      gridColumns = 2;
+      gridRows = 8;
+    } else {
+      // Larger screens: 4 videos per row for first 3 rows, 3 videos in fourth row
+      gridColumns = Math.min(4, maxColumns);
+      gridRows = 4;
+    }
   } else if (participantCount === 16) {
-    gridColumns = Math.min(4, maxColumns);
-    gridRows = 4;
+    // On mobile portrait: 2 columns, 8 rows
+    if (isMobilePortrait) {
+      gridColumns = 2;
+      gridRows = 8;
+    } else {
+      gridColumns = Math.min(4, maxColumns);
+      gridRows = 4;
+    }
   } else {
     // For more than 16, use a scrollable grid with responsive columns
-    gridColumns = maxColumns;
-    gridRows = Math.ceil(participantCount / gridColumns);
+    if (isMobilePortrait) {
+      gridColumns = 2;
+      gridRows = Math.ceil(participantCount / 2);
+    } else {
+      gridColumns = maxColumns;
+      gridRows = Math.ceil(participantCount / gridColumns);
+    }
     remoteContainer.style.overflowY = 'auto';
     const controlHeight = isMobile ? 70 : 80;
     remoteContainer.style.maxHeight = `calc(100vh - ${controlHeight}px)`;
@@ -401,11 +497,18 @@ function updateLayout() {
 
       // Apply custom layout for 3 participants
       if (useCustomLayout && remoteTiles.length === 3) {
-        // First two videos in left column (stacked)
-        remoteTiles[0].style.gridArea = '1 / 1 / 2 / 2'; // Top-left
-        remoteTiles[1].style.gridArea = '2 / 1 / 3 / 2'; // Bottom-left
-        // Third video takes entire right column
-        remoteTiles[2].style.gridArea = '1 / 2 / 3 / 3'; // Full right column
+        if (isMobilePortrait) {
+          // Mobile portrait: 2 videos on top row, 1 video on bottom row
+          remoteTiles[0].style.gridArea = '1 / 1 / 2 / 2'; // Top-left
+          remoteTiles[1].style.gridArea = '1 / 2 / 2 / 3'; // Top-right
+          remoteTiles[2].style.gridArea = '2 / 1 / 3 / 3'; // Bottom row, full width
+        } else {
+          // Desktop/larger screens: First two videos in left column (stacked)
+          remoteTiles[0].style.gridArea = '1 / 1 / 2 / 2'; // Top-left
+          remoteTiles[1].style.gridArea = '2 / 1 / 3 / 2'; // Bottom-left
+          // Third video takes entire right column
+          remoteTiles[2].style.gridArea = '1 / 2 / 3 / 3'; // Full right column
+        }
       }
 
       // Apply default grid styles to all tiles

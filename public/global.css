@@ -35,76 +35,6 @@ body {
     }
 }
 
-/* Lobby/Login container styles */
-.login-container {
-    position: relative;
-    width: 100%;
-    height: 100vh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-}
-
-.login-blur {
-    min-height: 100vh;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 1rem 0;
-}
-
-#login {
-    width: 100%;
-    max-width: 100%;
-    min-height: calc(100vh - 2rem);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding-top: 1rem;
-    padding-bottom: 2rem;
-}
-
-/* Center profile picture */
-#userProfilePic {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    width: 100% !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-}
-
-#userProfilePic img,
-#userProfilePic div {
-    margin: 0 auto !important;
-    display: block !important;
-}
-
-#usernameDisplay {
-    text-align: center !important;
-    width: 100% !important;
-    display: block !important;
-}
-
-/* Custom scrollbar for lobby */
-.login-container::-webkit-scrollbar {
-    width: 8px;
-}
-
-.login-container::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-}
-
-.login-container::-webkit-scrollbar-thumb {
-    background: rgba(27, 67, 50, 0.3);
-    border-radius: 4px;
-}
-
-.login-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(27, 67, 50, 0.5);
-}
-
 /* Video layout styles - Google Meet style */
 #videoGridContainer {
     position: relative;
@@ -129,28 +59,13 @@ body {
 /* Lobby screen responsive styles */
 @media (max-width: 640px) {
     /* Login container adjustments */
-    .login-container {
-        overflow-y: auto;
-        overflow-x: hidden;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .login-blur {
-        min-height: 100vh;
-        padding: 0.5rem 0;
-    }
-
     #loginContainer {
-        padding: 0;
+        padding: 0.5rem;
     }
 
     #login {
-        margin-top: 0 !important;
+        margin-top: 0.5rem !important;
         padding: 0.5rem !important;
-        min-height: calc(100vh - 1rem);
-        align-items: flex-start;
-        padding-top: 1rem;
-        padding-bottom: 2rem;
     }
 
     /* Lobby layout - ensure proper stacking */
@@ -226,18 +141,12 @@ body {
     /* User profile pic container */
     #userProfilePic {
         margin-top: 0.75rem !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        width: 100% !important;
     }
 
     #userProfilePic img,
     #userProfilePic div {
         width: 4rem !important;
         height: 4rem !important;
-        margin: 0 auto !important;
-        display: block !important;
     }
 
     /* Username display */
@@ -319,19 +228,10 @@ body {
         font-size: 1.125rem !important;
     }
 
-    #userProfilePic {
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        width: 100% !important;
-    }
-
     #userProfilePic img,
     #userProfilePic div {
         width: 3.5rem !important;
         height: 3.5rem !important;
-        margin: 0 auto !important;
-        display: block !important;
     }
 
     #nameInput {
@@ -615,10 +515,8 @@ body {
         display: none !important;
     }
 
-    /* Video grid - single column on very small screens */
-    #remoteVideos {
-        grid-template-columns: 1fr !important;
-    }
+    /* Video grid - allow 2 columns on mobile for better layout */
+    /* Note: JavaScript will control the exact grid layout based on participant count */
 
     /* Participants panel - full width on mobile */
     .participants-panel {
@@ -708,10 +606,8 @@ body {
         padding: 4px;
     }
 
-    /* Adjust grid for landscape - can fit more columns */
-    #remoteVideos {
-        grid-template-columns: repeat(2, 1fr) !important;
-    }
+    /* Note: JavaScript will control the exact grid layout based on participant count */
+    /* Don't force grid-template-columns here to allow dynamic layout */
 }
 
 /* Very small screens (up to 480px) */
