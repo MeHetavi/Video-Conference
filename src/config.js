@@ -107,9 +107,9 @@ module.exports = {
     webRtcTransport: {
       listenIps: [
         {
-          ip: process.env.WEBRTC_LISTEN_IP || '0.0.0.0',
+          ip: '0.0.0.0',
           // External IP announced to clients (env or detected external IP)
-          announcedIp: process.env.MEDIASOUP_ANNOUNCED_IP || "34.100.140.55"
+          announcedIp: "34.100.140.55"
         }
       ],
       maxIncomingBitrate: 1500000,
