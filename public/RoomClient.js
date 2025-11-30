@@ -482,16 +482,25 @@ function updateLayout() {
       }
 
       // Apply default grid styles to all tiles
-      remoteTiles.forEach(tile => {
+      remoteTiles.forEach((tile, index) => {
         tile.style.width = '100%';
         tile.style.height = '100%';
-        tile.style.aspectRatio = '16/9';
         tile.style.minHeight = '0';
         tile.style.maxHeight = '';
+        tile.style.flex = '';
+        
+        // For 3-video layout on mobile, the bottom video spans 2 columns
+        // Remove aspect ratio constraint to let it fill the grid cell properly
+        if (useCustomLayout && remoteTiles.length === 3 && isMobile && index === 2) {
+          // Bottom video: let grid cell determine size, video will use object-fit: contain
+          tile.style.aspectRatio = '';
+        } else {
+          tile.style.aspectRatio = '16/9';
+        }
+        
         if (!useCustomLayout || remoteTiles.length !== 3) {
           tile.style.gridArea = '';
         }
-        tile.style.flex = '';
       });
     }
   }

@@ -515,10 +515,8 @@ body {
         display: none !important;
     }
 
-    /* Video grid - single column on very small screens */
-    #remoteVideos {
-        grid-template-columns: 1fr !important;
-    }
+    /* Video grid layout is handled by JavaScript based on participant count */
+    /* Removed forced single column to allow proper 2-column layout for 3-4 videos */
 
     /* Participants panel - full width on mobile */
     .participants-panel {
