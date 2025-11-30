@@ -234,24 +234,19 @@ function updateLayout() {
         pinnedArea.style.gap = isMobile ? '4px' : '8px';
         pinnedArea.style.overflow = 'hidden';
         if (isMobile) {
-          pinnedArea.style.minHeight = '250px';
-          pinnedArea.style.maxHeight = '50vh';
-          pinnedArea.style.flex = '1 1 auto';
-        } else {
-          pinnedArea.style.flex = '1';
+          pinnedArea.style.minHeight = '200px';
+          pinnedArea.style.maxHeight = '40vh';
         }
         remoteContainer.appendChild(pinnedArea);
       } else {
         pinnedArea.style.flexDirection = 'column';
         pinnedArea.style.gap = isMobile ? '4px' : '8px';
         if (isMobile) {
-          pinnedArea.style.minHeight = '250px';
-          pinnedArea.style.maxHeight = '50vh';
-          pinnedArea.style.flex = '1 1 auto';
+          pinnedArea.style.minHeight = '200px';
+          pinnedArea.style.maxHeight = '40vh';
         } else {
           pinnedArea.style.minHeight = '';
           pinnedArea.style.maxHeight = '';
-          pinnedArea.style.flex = '1';
         }
       }
 
@@ -574,11 +569,6 @@ function updateLayout() {
 
       // Apply custom layout for 3 participants
       if (actualUseCustomLayout && remoteTilesAfterMove.length === 3) {
-        // Reset all grid areas first
-        remoteTilesAfterMove.forEach(tile => {
-          tile.style.gridArea = '';
-        });
-        
         if (isMobile) {
           // Mobile: 2 in first row, 1 in second row
           remoteTilesAfterMove[0].style.gridArea = '1 / 1 / 2 / 2'; // Top-left
