@@ -100,7 +100,9 @@ function updateLayout() {
     remoteContainer.style.width = '100%';
     remoteContainer.style.height = '100%';
     remoteContainer.style.minHeight = '0';
-    remoteContainer.style.overflow = 'hidden';
+    remoteContainer.style.overflowX = 'hidden';
+    remoteContainer.style.overflowY = 'auto';
+    remoteContainer.style.scrollBehavior = 'smooth';
   } else if (participantCount === 1) {
     gridColumns = 1;
     gridRows = 1;
@@ -185,7 +187,9 @@ function updateLayout() {
     // For more than 16, use a scrollable grid with responsive columns
     gridColumns = maxColumns;
     gridRows = Math.ceil(participantCount / gridColumns);
+    remoteContainer.style.overflowX = 'hidden';
     remoteContainer.style.overflowY = 'auto';
+    remoteContainer.style.scrollBehavior = 'smooth';
     const controlHeight = isMobile ? 70 : 80;
     remoteContainer.style.maxHeight = `calc(100vh - ${controlHeight}px)`;
   }
@@ -220,7 +224,9 @@ function updateLayout() {
         remoteContainer.style.width = '100%';
         remoteContainer.style.height = '100%';
         remoteContainer.style.minHeight = '0';
-        remoteContainer.style.overflow = 'hidden';
+        remoteContainer.style.overflowX = 'hidden';
+        remoteContainer.style.overflowY = 'auto';
+        remoteContainer.style.scrollBehavior = 'smooth';
 
       // Create main area for pinned video (only one can be pinned)
       let pinnedArea = remoteContainer.querySelector('.pinned-videos-area');
@@ -565,7 +571,8 @@ function updateLayout() {
       remoteContainer.style.height = '100%';
       remoteContainer.style.minHeight = '0';
       remoteContainer.style.overflowX = 'hidden';
-      remoteContainer.style.overflowY = actualParticipantCount > 16 ? 'auto' : 'hidden';
+      remoteContainer.style.overflowY = 'auto';
+      remoteContainer.style.scrollBehavior = 'smooth';
 
       // Apply custom layout for 3 participants
       if (actualUseCustomLayout && remoteTilesAfterMove.length === 3) {
