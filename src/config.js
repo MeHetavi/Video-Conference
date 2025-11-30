@@ -107,7 +107,7 @@ module.exports = {
       listenIps: [
         {
           ip: '0.0.0.0',
-          announcedIp: '34.100.140.55' //'35.200.140.215' // This will be the external IP
+          announcedIp: '127.0.0.1' //'35.200.140.215' // This will be the external IP
         }
       ],
       maxIncomingBitrate: 1500000,
