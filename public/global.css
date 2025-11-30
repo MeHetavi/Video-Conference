@@ -492,9 +492,9 @@ body {
 /* Mobile devices (up to 640px) */
 @media (max-width: 640px) {
     #localVideoContainer {
-        width: 120px;
-        max-width: 35vw;
-        min-width: 100px;
+        width: 200px;
+        max-width: 45vw;
+        min-width: 160px;
         bottom: 80px;
         right: 8px;
         z-index: 25;
@@ -629,9 +629,9 @@ body {
 /* Landscape mobile orientation */
 @media (max-width: 768px) and (orientation: landscape) {
     #localVideoContainer {
-        width: 150px;
-        max-width: 20vw;
-        min-width: 120px;
+        width: 180px;
+        max-width: 25vw;
+        min-width: 150px;
         bottom: 70px;
     }
 
@@ -649,9 +649,9 @@ body {
 /* Very small screens (up to 480px) */
 @media (max-width: 480px) {
     #localVideoContainer {
-        width: 100px;
-        max-width: 40vw;
-        min-width: 80px;
+        width: 160px;
+        max-width: 42vw;
+        min-width: 140px;
         bottom: 68px !important;
         right: 4px;
     }
