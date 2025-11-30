@@ -145,7 +145,23 @@ async function joinRoom(name, room_id) {
       window.roomConfig.ownership = ownershipData;
     }
   } else {
-    console.warn('No token found; joining room without ownership or status checks.');
+    console.warn('No token found; joining room as unauthenticated participant. Calling ongoing API without auth.');
+
+    try {
+      const API_BASE_URL = window.API_BASE_URL || 'http://prana.ycp.life/api/v1';
+      const response = await fetch(`${API_BASE_URL}/session-occurrences/session/${room_id}/ongoing`, {
+        method: 'GET'
+      });
+
+      if (response.ok) {
+        const data = await response.json().catch(() => ({}));
+        console.log('Unauthenticated session ongoing check response:', data);
+      } else {
+        console.warn('Unauthenticated ongoing check failed with status:', response.status);
+      }
+    } catch (error) {
+      console.error('Error calling unauthenticated ongoing API:', error);
+    }
   }
 
   // Proceed with joining the room
