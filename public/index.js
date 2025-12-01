@@ -204,8 +204,6 @@ async function roomOpen() {
   reveal(devicesButton)
   reveal(participantsButton)
   reveal(toggleParticipantsBtn)
-  const layoutButton = document.getElementById('layoutButton')
-  if (layoutButton) reveal(layoutButton)
 
   // Apply lobby settings to video conference
   const lobbySettings = window.lobbySettings || {};
@@ -591,77 +589,6 @@ function toggleMoreOptions() {
   // Add more options menu functionality here
   console.log('More options clicked')
 }
-
-// Layout selection functionality
-let currentLayout = localStorage.getItem('videoLayout') || 'auto';
-
-function toggleLayoutDialog() {
-  const dialog = document.getElementById('layoutDialog');
-  if (!dialog) return;
-  
-  const isHidden = dialog.classList.contains('hidden');
-  dialog.classList.toggle('hidden', !isHidden);
-  
-  if (!isHidden) {
-    // Set the current layout as selected
-    const radio = dialog.querySelector(`input[value="${currentLayout}"]`);
-    if (radio) {
-      radio.checked = true;
-    }
-  }
-}
-
-function setLayout(layoutType) {
-  currentLayout = layoutType;
-  localStorage.setItem('videoLayout', layoutType);
-  
-  // Update the layout
-  if (typeof updateLayout === 'function') {
-    updateLayout();
-  }
-  
-  // Close the dialog
-  toggleLayoutDialog();
-}
-
-// Initialize layout selection handlers
-document.addEventListener('DOMContentLoaded', function() {
-  const layoutDialog = document.getElementById('layoutDialog');
-  if (layoutDialog) {
-    // Handle radio button changes
-    const layoutRadios = layoutDialog.querySelectorAll('.layout-radio');
-    layoutRadios.forEach(radio => {
-      radio.addEventListener('change', function() {
-        if (this.checked) {
-          setLayout(this.value);
-        }
-      });
-    });
-    
-    // Handle label clicks
-    const layoutOptions = layoutDialog.querySelectorAll('.layout-option');
-    layoutOptions.forEach(option => {
-      option.addEventListener('click', function() {
-        const radio = this.querySelector('.layout-radio');
-        if (radio) {
-          radio.checked = true;
-          setLayout(radio.value);
-        }
-      });
-    });
-  }
-  
-  // Load saved layout preference
-  const savedLayout = localStorage.getItem('videoLayout');
-  if (savedLayout) {
-    currentLayout = savedLayout;
-  }
-});
-
-// Make layout functions globally available
-window.toggleLayoutDialog = toggleLayoutDialog;
-window.setLayout = setLayout;
-window.getCurrentLayout = () => currentLayout;
 
 // Toast Notification System
 function initToastContainer() {
