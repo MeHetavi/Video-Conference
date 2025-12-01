@@ -897,6 +897,7 @@ class RoomClient {
           const container = document.createElement('div');
           container.className = 'video-container';
           container.id = `container-local-${socket.id}`;
+          container.dataset.socketId = socket.id; // Store socket ID for tracking
           container.style.position = 'relative';
           container.style.width = '100%';
           container.style.height = '100%';
@@ -993,6 +994,20 @@ class RoomClient {
           container.appendChild(profilePicPlaceholder);
           container.appendChild(video);
           container.appendChild(overlay);
+
+          // Store reference in participantContainers so it's included in layout calculations
+          this.participantContainers.set(socket.id, container);
+
+          // Add click event listener to container to pin/unpin (same as remote videos)
+          if (!container.dataset.pinHandlerAttached) {
+            container.dataset.pinHandlerAttached = 'true';
+            container.style.cursor = 'pointer';
+            container.addEventListener('click', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              this.togglePinVideo(socket.id);
+            });
+          }
 
           // Add the container to the remote videos container (render with remote tiles)
           document.getElementById('remoteVideos').appendChild(container);
