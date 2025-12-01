@@ -897,6 +897,7 @@ class RoomClient {
           const container = document.createElement('div');
           container.className = 'video-container';
           container.id = `container-local-${socket.id}`;
+          container.dataset.socketId = socket.id; // Add socketId for consistency with remote containers
           container.style.position = 'relative';
           container.style.width = '100%';
           container.style.height = '100%';
@@ -904,6 +905,9 @@ class RoomClient {
           container.style.alignItems = 'center';
           container.style.justifyContent = 'center';
           container.style.backgroundColor = '#1B4332';
+
+          // Store reference in participantContainers for consistency
+          this.participantContainers.set(socket.id, container);
 
           // Create the video element
           const video = document.createElement('video');
@@ -994,8 +998,19 @@ class RoomClient {
           container.appendChild(video);
           container.appendChild(overlay);
 
+          // Add click event listener to container to pin/unpin (for consistency with remote videos)
+          container.style.cursor = 'pointer';
+          container.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.togglePinVideo(socket.id);
+          });
+
           // Add the container to the remote videos container (render with remote tiles)
           document.getElementById('remoteVideos').appendChild(container);
+
+          // Trigger layout update to include local video in the grid
+          updateLayout();
 
           try {
             const data = await this.socket.request('getRouterRtpCapabilities');
