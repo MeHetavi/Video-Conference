@@ -18,6 +18,16 @@ function updateLayout() {
   const remoteContainer = document.getElementById('remoteVideos');
   if (!remoteContainer) return;
 
+  // Ensure local video container is in the remoteVideos grid (not in localMedia)
+  const localMedia = document.getElementById('localMedia');
+  if (localMedia) {
+    const localVideoTile = localMedia.querySelector('.video-container');
+    if (localVideoTile && localVideoTile.parentElement !== remoteContainer) {
+      // Move local video to remoteVideos grid
+      remoteContainer.appendChild(localVideoTile);
+    }
+  }
+
   // Get all video tiles including local video (now all are in the same grid)
   const allTiles = Array.from(remoteContainer.querySelectorAll('.video-container'));
 
@@ -84,8 +94,10 @@ function updateLayout() {
     remoteContainer.style.padding = isMobile ? '4px' : '8px';
     remoteContainer.style.width = '100%';
     remoteContainer.style.height = '100%';
-    remoteContainer.style.minHeight = '0';
+    remoteContainer.style.minHeight = '100%';
+    remoteContainer.style.maxHeight = '100%';
     remoteContainer.style.overflow = 'hidden';
+    remoteContainer.style.position = 'relative';
   } else if (participantCount === 2) {
     // Small screens: 1 column, 2 rows (one per row)
     if (isMobile) {
@@ -176,7 +188,21 @@ function updateLayout() {
   if (participantCount > 0) {
     // For small screens with more than 4 videos, automatically pin first video and show others horizontally
     // Or if there are already pinned videos, use the pinned layout
-    if ((isMobile && participantCount > 4 && pinnedCount === 0) || pinnedCount > 0) {
+    // Skip pinned layout for single participant (just local video) - use grid instead
+    if (participantCount === 1) {
+      // Single participant (local video only) - ensure grid is applied
+      // Grid was already set above, but ensure tiles are visible
+      allTiles.forEach(tile => {
+        tile.style.width = '100%';
+        tile.style.height = '100%';
+        tile.style.minHeight = '0';
+        tile.style.aspectRatio = '16/9';
+        tile.style.display = 'flex';
+        tile.style.visibility = 'visible';
+      });
+      // Don't continue to pinned/unpinned logic for single participant
+      return;
+    } else if ((isMobile && participantCount > 4 && pinnedCount === 0) || pinnedCount > 0) {
       // Auto-pin first video on mobile if more than 4 videos and no pinned videos
       if (isMobile && participantCount > 4 && pinnedCount === 0) {
         // Automatically pin the first video
@@ -601,6 +627,12 @@ function updateLayout() {
   const videoMedia = document.getElementById('videoMedia');
   if (videoMedia) {
     videoMedia.style.height = `calc(100vh - ${controlHeight}px)`;
+  }
+
+  // Ensure remoteVideos container has proper height
+  if (remoteContainer) {
+    remoteContainer.style.minHeight = '100%';
+    remoteContainer.style.height = '100%';
   }
 
   // Update local video container position for mobile
