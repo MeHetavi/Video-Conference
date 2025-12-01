@@ -1102,6 +1102,48 @@ class RoomClient {
     // Create/update containers for all participants (except local user)
     this.createParticipantContainers();
 
+    // Update mute buttons for all participants when list is refreshed
+    if (this.isTrainer) {
+      this.participants.forEach(participant => {
+        if (participant.socketId !== this.socket.id) {
+          const hasAudio = this.hasProducer(participant.socketId, mediaType.audio);
+          const isMuted = this.mutedParticipants.get(participant.socketId) || false;
+
+          // Update mute buttons in video containers
+          const containers = Array.from(document.querySelectorAll(`[data-socket-id="${participant.socketId}"]`));
+          containers.forEach(container => {
+            const muteButton = container.querySelector('.video-mute-btn');
+            if (muteButton) {
+              if (!hasAudio) {
+                // Audio is off - show disabled state
+                muteButton.classList.add('disabled');
+                muteButton.disabled = true;
+                muteButton.setAttribute('aria-label', 'Audio is off');
+                muteButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" opacity="0.5"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg>';
+                // Remove click handler
+                muteButton.replaceWith(muteButton.cloneNode(true));
+              } else {
+                // Audio is on - show normal mute button
+                muteButton.classList.remove('disabled');
+                muteButton.disabled = false;
+
+                // Add click handler if not already present
+                if (!muteButton.onclick) {
+                  muteButton.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    await this.toggleMuteParticipant(participant.socketId);
+                  });
+                }
+
+                this.updateMuteButton(muteButton, isMuted);
+              }
+            }
+          });
+        }
+      });
+    }
+
 
     // Create participant items
     this.participants.forEach(participant => {
@@ -1131,10 +1173,10 @@ class RoomClient {
             ${participant.name}
             ${isCurrentUser ? '<span class="you-indicator">You</span>' : ''}
             ${participant.isTrainer ? '<span class="trainer-indicator">Trainer</span>' : ''}
-            ${isMuted ? '<span class="muted-indicator" title="Audio muted by trainer"><i class="fas fa-microphone-slash"></i></span>' : ''}
+            ${isMuted && hasAudio ? '<span class="muted-indicator" title="Audio muted by trainer"><i class="fas fa-microphone-slash"></i></span>' : ''}
           </div>
           <div class="participant-status">
-            <span class="status-icon ${audioStatusClass}" title="${isMuted ? 'Muted by trainer' : (hasAudio ? 'Audio on' : 'Audio off')}">
+            <span class="status-icon ${audioStatusClass}" title="${isMuted && hasAudio ? 'Muted by trainer' : (hasAudio ? 'Audio on' : 'Audio off')}">
               <i class="fas ${audioIconClass}"></i>
             </span>
             <span class="status-icon ${hasVideo ? 'active' : 'inactive'}" title="${hasVideo ? 'Video on' : 'Video off'}">
@@ -1291,18 +1333,31 @@ class RoomClient {
 
         // Add mute button (only for trainers, and not for local user)
         if (this.isTrainer && participant.socketId !== this.socket.id) {
+          const hasAudio = this.hasProducer(participant.socketId, mediaType.audio);
+          const isMuted = this.mutedParticipants.get(participant.socketId) || false;
+
           const muteButton = document.createElement('button');
           muteButton.className = 'video-mute-btn';
           muteButton.type = 'button';
-          muteButton.setAttribute('aria-label', 'Mute audio');
-          muteButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>';
 
-          // Add click handler to mute button
-          muteButton.addEventListener('click', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            await this.toggleMuteParticipant(participant.socketId);
-          });
+          if (!hasAudio) {
+            // Audio is off - show disabled state
+            muteButton.classList.add('disabled');
+            muteButton.disabled = true;
+            muteButton.setAttribute('aria-label', 'Audio is off');
+            muteButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" opacity="0.5"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg>';
+          } else {
+            // Audio is on - show normal mute button
+            muteButton.setAttribute('aria-label', 'Mute audio');
+            this.updateMuteButton(muteButton, isMuted);
+
+            // Add click handler to mute button
+            muteButton.addEventListener('click', async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              await this.toggleMuteParticipant(participant.socketId);
+            });
+          }
 
           overlay.appendChild(muteButton);
         }
@@ -1376,23 +1431,42 @@ class RoomClient {
 
           // Update mute button if exists (only for trainers)
           if (this.isTrainer && participant.socketId !== this.socket.id) {
+            const hasAudio = this.hasProducer(participant.socketId, mediaType.audio);
+            const isMuted = this.mutedParticipants.get(participant.socketId) || false;
+
             let muteButton = overlay.querySelector('.video-mute-btn');
             if (!muteButton) {
               muteButton = document.createElement('button');
               muteButton.className = 'video-mute-btn';
               muteButton.type = 'button';
               overlay.appendChild(muteButton);
-
-              // Add click handler to mute button
-              muteButton.addEventListener('click', async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                await this.toggleMuteParticipant(participant.socketId);
-              });
             }
 
-            const isMuted = this.mutedParticipants.get(participant.socketId) || false;
-            this.updateMuteButton(muteButton, isMuted);
+            // Update button based on audio state
+            if (!hasAudio) {
+              // Audio is off - show disabled state
+              muteButton.classList.add('disabled');
+              muteButton.disabled = true;
+              muteButton.setAttribute('aria-label', 'Audio is off');
+              muteButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" opacity="0.5"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg>';
+              // Remove click handler
+              muteButton.replaceWith(muteButton.cloneNode(true));
+            } else {
+              // Audio is on - show normal mute button
+              muteButton.classList.remove('disabled');
+              muteButton.disabled = false;
+
+              // Add click handler if not already present
+              if (!muteButton.onclick) {
+                muteButton.addEventListener('click', async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  await this.toggleMuteParticipant(participant.socketId);
+                });
+              }
+
+              this.updateMuteButton(muteButton, isMuted);
+            }
           }
         }
       }
@@ -2203,23 +2277,42 @@ class RoomClient {
 
         // Add mute button (only for trainers, and not for local user)
         if (this.isTrainer && appData.producerSocketId !== this.socket.id) {
+          const hasAudio = this.hasProducer(appData.producerSocketId, mediaType.audio);
+          const isMuted = this.mutedParticipants.get(appData.producerSocketId) || false;
+
           let muteButton = overlay.querySelector('.video-mute-btn');
           if (!muteButton) {
             muteButton = document.createElement('button');
             muteButton.className = 'video-mute-btn';
             muteButton.type = 'button';
             overlay.appendChild(muteButton);
-
-            // Add click handler to mute button
-            muteButton.addEventListener('click', async (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              await this.toggleMuteParticipant(appData.producerSocketId);
-            });
           }
 
-          const isMuted = this.mutedParticipants.get(appData.producerSocketId) || false;
-          this.updateMuteButton(muteButton, isMuted);
+          // Update button based on audio state
+          if (!hasAudio) {
+            // Audio is off - show disabled state
+            muteButton.classList.add('disabled');
+            muteButton.disabled = true;
+            muteButton.setAttribute('aria-label', 'Audio is off');
+            muteButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" opacity="0.5"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg>';
+            // Remove click handler
+            muteButton.replaceWith(muteButton.cloneNode(true));
+          } else {
+            // Audio is on - show normal mute button
+            muteButton.classList.remove('disabled');
+            muteButton.disabled = false;
+
+            // Add click handler if not already present
+            if (!muteButton.onclick) {
+              muteButton.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                await this.toggleMuteParticipant(appData.producerSocketId);
+              });
+            }
+
+            this.updateMuteButton(muteButton, isMuted);
+          }
         }
 
         // Update container pinned state
@@ -3660,6 +3753,11 @@ class RoomClient {
   updateMuteButton(button, isMuted) {
     if (!button) return;
 
+    // Check if button is disabled (audio is off)
+    if (button.disabled || button.classList.contains('disabled')) {
+      return; // Don't update disabled buttons
+    }
+
     button.setAttribute('aria-label', isMuted ? 'Unmute audio' : 'Mute audio');
     if (isMuted) {
       // Muted icon (microphone with slash)
@@ -3678,7 +3776,21 @@ class RoomClient {
     containers.forEach(container => {
       const muteButton = container.querySelector('.video-mute-btn');
       if (muteButton) {
-        this.updateMuteButton(muteButton, isMuted);
+        // Check if participant has audio
+        const hasAudio = this.hasProducer(socketId, mediaType.audio);
+
+        if (!hasAudio) {
+          // Audio is off - show disabled state
+          muteButton.classList.add('disabled');
+          muteButton.disabled = true;
+          muteButton.setAttribute('aria-label', 'Audio is off');
+          muteButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" opacity="0.5"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg>';
+        } else {
+          // Audio is on - update mute button state
+          muteButton.classList.remove('disabled');
+          muteButton.disabled = false;
+          this.updateMuteButton(muteButton, isMuted);
+        }
       }
     });
   }

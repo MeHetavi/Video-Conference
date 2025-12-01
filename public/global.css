@@ -527,6 +527,42 @@ body {
     height: 16px;
 }
 
+.video-mute-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(0, 0, 0, 0.4) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.video-mute-btn.disabled:hover {
+    background: rgba(0, 0, 0, 0.4) !important;
+    transform: none;
+    box-shadow: none;
+}
+
+.muted-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    color: #ef4444;
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+.muted-indicator i {
+    font-size: 0.7rem;
+}
+
+.status-icon.muted-by-trainer {
+    color: #ef4444 !important;
+    opacity: 0.8;
+}
+
+.status-icon.muted-by-trainer i {
+    color: #ef4444;
+}
+
 /* Local video overlay positioning (Google Meet style - bottom right) */
 #localVideoContainer {
     position: absolute;
@@ -1204,33 +1240,10 @@ body {
     color: #b7ffe0;
 }
 
-.muted-indicator {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 6px;
-    color: #ef4444;
-    font-size: 0.75rem;
-    opacity: 0.9;
-}
-
-.muted-indicator i {
-    font-size: 0.7rem;
-}
-
 .participant-status {
     display: flex;
     gap: 8px;
     margin-top: 4px;
-}
-
-.status-icon.muted-by-trainer {
-    color: #ef4444 !important;
-    opacity: 0.8;
-}
-
-.status-icon.muted-by-trainer i {
-    color: #ef4444;
 }
 
 .status-icon {
