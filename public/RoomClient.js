@@ -18,12 +18,6 @@ function updateLayout() {
   const remoteContainer = document.getElementById('remoteVideos');
   if (!remoteContainer) return;
 
-  // Hide the old localVideoContainer since local video is now in the grid
-  const localVideoContainer = document.getElementById('localVideoContainer');
-  if (localVideoContainer) {
-    localVideoContainer.style.display = 'none';
-  }
-
   // Get all tiles including local video (all are now in remoteVideos container)
   const allTiles = Array.from(remoteContainer.querySelectorAll('.video-container'));
 
