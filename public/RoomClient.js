@@ -3543,6 +3543,75 @@ class RoomClient {
     // This method is kept for compatibility but does nothing
   }
 
+  // Toggle mute state for a participant (trainer only)
+  async toggleMuteParticipant(targetSocketId) {
+    if (!this.isTrainer) {
+      console.warn('Only trainers can mute participants');
+      return;
+    }
+
+    if (targetSocketId === this.socket.id) {
+      console.warn('Cannot mute yourself');
+      return;
+    }
+
+    const isMuted = this.mutedParticipants.get(targetSocketId) || false;
+
+    try {
+      if (isMuted) {
+        // Unmute
+        const result = await this.socket.request('unmuteParticipantAudio', {
+          targetPeerId: targetSocketId
+        });
+        if (result.success) {
+          this.mutedParticipants.set(targetSocketId, false);
+          this.updateMuteButtonsForParticipant(targetSocketId, false);
+        }
+      } else {
+        // Mute
+        const result = await this.socket.request('muteParticipantAudio', {
+          targetPeerId: targetSocketId
+        });
+        if (result.success) {
+          this.mutedParticipants.set(targetSocketId, true);
+          this.updateMuteButtonsForParticipant(targetSocketId, true);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling mute:', error);
+      if (typeof showErrorNotification === 'function') {
+        showErrorNotification('Failed to mute/unmute participant');
+      }
+    }
+  }
+
+  // Update mute button icon
+  updateMuteButton(button, isMuted) {
+    if (!button) return;
+
+    button.setAttribute('aria-label', isMuted ? 'Unmute audio' : 'Mute audio');
+    if (isMuted) {
+      // Muted icon (microphone with slash)
+      button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg>';
+      button.classList.add('muted');
+    } else {
+      // Unmuted icon (microphone)
+      button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>';
+      button.classList.remove('muted');
+    }
+  }
+
+  // Update all mute buttons for a specific participant
+  updateMuteButtonsForParticipant(socketId, isMuted) {
+    const containers = Array.from(document.querySelectorAll(`[data-socket-id="${socketId}"]`));
+    containers.forEach(container => {
+      const muteButton = container.querySelector('.video-mute-btn');
+      if (muteButton) {
+        this.updateMuteButton(muteButton, isMuted);
+      }
+    });
+  }
+
   initPoseComparison() {
     const poseDetectionMode = document.getElementById('poseDetectionMode');
     if (poseDetectionMode) {
