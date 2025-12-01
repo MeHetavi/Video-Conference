@@ -64,7 +64,7 @@ function updateLayout() {
   const maxColumns = getMaxColumns();
 
   if (participantCount === 0) {
-    // No remote participants - show empty grid, local video will be in overlay
+    // No participants (including local) - show empty grid
     gridColumns = 1;
     gridRows = 1;
     remoteContainer.style.display = 'grid';
@@ -898,12 +898,8 @@ class RoomClient {
           container.className = 'video-container';
           container.id = `container-local-${socket.id}`;
           container.dataset.socketId = socket.id; // Add socketId for consistency with remote containers
+          // Note: Let CSS grid handle sizing - only set position and background
           container.style.position = 'relative';
-          container.style.width = '100%';
-          container.style.height = '100%';
-          container.style.display = 'flex';
-          container.style.alignItems = 'center';
-          container.style.justifyContent = 'center';
           container.style.backgroundColor = '#1B4332';
 
           // Store reference in participantContainers for consistency
@@ -1007,10 +1003,16 @@ class RoomClient {
           });
 
           // Add the container to the remote videos container (render with remote tiles)
-          document.getElementById('remoteVideos').appendChild(container);
+          const remoteVideosContainer = document.getElementById('remoteVideos');
+          if (remoteVideosContainer) {
+            remoteVideosContainer.appendChild(container);
+            console.log('Local video container added to grid:', container.id, container);
 
-          // Trigger layout update to include local video in the grid
-          updateLayout();
+            // Trigger layout update to include local video in the grid
+            updateLayout();
+          } else {
+            console.error('remoteVideos container not found!');
+          }
 
           try {
             const data = await this.socket.request('getRouterRtpCapabilities');
