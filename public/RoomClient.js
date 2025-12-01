@@ -765,6 +765,8 @@ class RoomClient {
   constructor(localMediaEl, remoteVideoEl, remoteAudioEl, mediasoupClient, socket, room_id, name, successCallback, isTrainer = '0') {
     // Track pinned videos (socketId -> boolean)
     this.pinnedVideos = new Map();
+    // Track muted participants (socketId -> boolean)
+    this.mutedParticipants = new Map();
     this.name = name
     this.localMediaEl = localMediaEl
     this.remoteVideoEl = remoteVideoEl
@@ -1265,6 +1267,24 @@ class RoomClient {
         overlay.appendChild(videoInfo);
         overlay.appendChild(pinButton);
 
+        // Add mute button (only for trainers, and not for local user)
+        if (this.isTrainer && participant.socketId !== this.socket.id) {
+          const muteButton = document.createElement('button');
+          muteButton.className = 'video-mute-btn';
+          muteButton.type = 'button';
+          muteButton.setAttribute('aria-label', 'Mute audio');
+          muteButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>';
+
+          // Add click handler to mute button
+          muteButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await this.toggleMuteParticipant(participant.socketId);
+          });
+
+          overlay.appendChild(muteButton);
+        }
+
         // Update container pinned state
         if (isPinned) {
           container.classList.add('pinned');
@@ -1326,6 +1346,27 @@ class RoomClient {
           pinButton.innerHTML = isPinned
             ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M16 12V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v8c0 1.1-.9 2-2 2s-2 .9-2 2v2h16v-2c0-1.1-.9-2-2-2s-2-.9-2-2z"/></svg>'
             : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M16 12V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v8c0 1.1-.9 2-2 2s-2 .9-2 2v2h16v-2c0-1.1-.9-2-2-2s-2-.9-2-2z" opacity="0.6"/></svg>';
+
+          // Update mute button if exists (only for trainers)
+          if (this.isTrainer && participant.socketId !== this.socket.id) {
+            let muteButton = overlay.querySelector('.video-mute-btn');
+            if (!muteButton) {
+              muteButton = document.createElement('button');
+              muteButton.className = 'video-mute-btn';
+              muteButton.type = 'button';
+              overlay.appendChild(muteButton);
+
+              // Add click handler to mute button
+              muteButton.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                await this.toggleMuteParticipant(participant.socketId);
+              });
+            }
+
+            const isMuted = this.mutedParticipants.get(participant.socketId) || false;
+            this.updateMuteButton(muteButton, isMuted);
+          }
         }
       }
     });
@@ -1758,6 +1799,17 @@ class RoomClient {
         this.displayCapturedImage(imageData, timestamp, capturedBy);
       });
     });
+
+    // Listen for participant audio mute/unmute events
+    this.socket.on('participantAudioMuted', (data) => {
+      this.mutedParticipants.set(data.peerId, true);
+      this.updateMuteButtonsForParticipant(data.peerId, true);
+    });
+
+    this.socket.on('participantAudioUnmuted', (data) => {
+      this.mutedParticipants.set(data.peerId, false);
+      this.updateMuteButtonsForParticipant(data.peerId, false);
+    });
   }
 
   //////// MAIN FUNCTIONS /////////////
@@ -2088,6 +2140,27 @@ class RoomClient {
         pinButton.innerHTML = isPinned
           ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M16 12V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v8c0 1.1-.9 2-2 2s-2 .9-2 2v2h16v-2c0-1.1-.9-2-2-2s-2-.9-2-2z"/></svg>'
           : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M16 12V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v8c0 1.1-.9 2-2 2s-2 .9-2 2v2h16v-2c0-1.1-.9-2-2-2s-2-.9-2-2z" opacity="0.6"/></svg>';
+
+        // Add mute button (only for trainers, and not for local user)
+        if (this.isTrainer && appData.producerSocketId !== this.socket.id) {
+          let muteButton = overlay.querySelector('.video-mute-btn');
+          if (!muteButton) {
+            muteButton = document.createElement('button');
+            muteButton.className = 'video-mute-btn';
+            muteButton.type = 'button';
+            overlay.appendChild(muteButton);
+
+            // Add click handler to mute button
+            muteButton.addEventListener('click', async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              await this.toggleMuteParticipant(appData.producerSocketId);
+            });
+          }
+
+          const isMuted = this.mutedParticipants.get(appData.producerSocketId) || false;
+          this.updateMuteButton(muteButton, isMuted);
+        }
 
         // Update container pinned state
         if (isPinned) {

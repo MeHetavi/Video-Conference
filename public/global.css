@@ -459,6 +459,46 @@ body {
     height: 16px;
 }
 
+.video-mute-btn {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    flex-shrink: 0;
+    opacity: 1 !important;
+    pointer-events: auto;
+    margin-left: 8px;
+}
+
+.video-mute-btn:hover {
+    background: rgba(0, 0, 0, 0.8);
+    border-color: #ef4444;
+    transform: scale(1.1);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+.video-mute-btn.muted {
+    background: rgba(239, 68, 68, 0.8);
+    border-color: #ef4444;
+}
+
+.video-mute-btn.muted:hover {
+    background: rgba(239, 68, 68, 1);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+}
+
+.video-mute-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
 /* Local video overlay positioning (Google Meet style - bottom right) */
 #localVideoContainer {
     position: absolute;

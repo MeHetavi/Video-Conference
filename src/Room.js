@@ -191,6 +191,54 @@ module.exports = class Room {
     return this.peers
   }
 
+  async mutePeerAudio(socket_id, targetPeerId) {
+    const targetPeer = this.peers.get(targetPeerId);
+    if (!targetPeer) {
+      throw new Error('Target peer not found');
+    }
+
+    // Find audio producer for the target peer
+    let audioProducer = null;
+    for (const [producerId, producer] of targetPeer.producers.entries()) {
+      if (producer.kind === 'audio') {
+        audioProducer = producer;
+        break;
+      }
+    }
+
+    if (!audioProducer) {
+      throw new Error('Audio producer not found for target peer');
+    }
+
+    // Pause the audio producer
+    audioProducer.pause();
+    return { success: true, producerId: audioProducer.id };
+  }
+
+  async unmutePeerAudio(socket_id, targetPeerId) {
+    const targetPeer = this.peers.get(targetPeerId);
+    if (!targetPeer) {
+      throw new Error('Target peer not found');
+    }
+
+    // Find audio producer for the target peer
+    let audioProducer = null;
+    for (const [producerId, producer] of targetPeer.producers.entries()) {
+      if (producer.kind === 'audio') {
+        audioProducer = producer;
+        break;
+      }
+    }
+
+    if (!audioProducer) {
+      throw new Error('Audio producer not found for target peer');
+    }
+
+    // Resume the audio producer
+    audioProducer.resume();
+    return { success: true, producerId: audioProducer.id };
+  }
+
   toJson() {
     const peersData = Array.from(this.peers.entries()).map(([id, peer]) => ({
       id: peer.id,

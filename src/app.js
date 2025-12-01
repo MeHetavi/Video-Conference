@@ -429,6 +429,70 @@ io.on('connection', (socket) => {
     }
   })
 
+  socket.on('muteParticipantAudio', async ({ targetPeerId }, callback) => {
+    if (!socket.room_id) {
+      return callback({ error: 'Not in a room' });
+    }
+
+    const room = roomList.get(socket.room_id);
+    if (!room) {
+      return callback({ error: 'Room not found' });
+    }
+
+    const requesterPeer = room.getPeers().get(socket.id);
+    if (!requesterPeer || !requesterPeer.isTrainer) {
+      return callback({ error: 'Only trainers can mute participants' });
+    }
+
+    if (targetPeerId === socket.id) {
+      return callback({ error: 'Cannot mute yourself' });
+    }
+
+    try {
+      const result = await room.mutePeerAudio(socket.id, targetPeerId);
+      // Notify all peers in the room about the mute
+      io.to(socket.room_id).emit('participantAudioMuted', {
+        peerId: targetPeerId,
+        mutedBy: socket.id
+      });
+      callback({ success: true, ...result });
+    } catch (error) {
+      callback({ error: error.message });
+    }
+  })
+
+  socket.on('unmuteParticipantAudio', async ({ targetPeerId }, callback) => {
+    if (!socket.room_id) {
+      return callback({ error: 'Not in a room' });
+    }
+
+    const room = roomList.get(socket.room_id);
+    if (!room) {
+      return callback({ error: 'Room not found' });
+    }
+
+    const requesterPeer = room.getPeers().get(socket.id);
+    if (!requesterPeer || !requesterPeer.isTrainer) {
+      return callback({ error: 'Only trainers can unmute participants' });
+    }
+
+    if (targetPeerId === socket.id) {
+      return callback({ error: 'Cannot unmute yourself' });
+    }
+
+    try {
+      const result = await room.unmutePeerAudio(socket.id, targetPeerId);
+      // Notify all peers in the room about the unmute
+      io.to(socket.room_id).emit('participantAudioUnmuted', {
+        peerId: targetPeerId,
+        unmutedBy: socket.id
+      });
+      callback({ success: true, ...result });
+    } catch (error) {
+      callback({ error: error.message });
+    }
+  })
+
   socket.on('restartIce', async ({ transportId }, callback) => {
     try {
       if (!socket.room_id) {
