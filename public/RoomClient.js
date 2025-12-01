@@ -14,17 +14,270 @@ const _EVENTS = {
   stopScreen: 'stopScreen'
 }
 
+// Layout helper functions
+function applySpotlightLayout(remoteContainer, allParticipantTiles, pinnedTiles, unpinnedTiles, isMobile, isTablet) {
+  // Clean up any existing layout structures
+  cleanupLayoutStructures(remoteContainer);
+
+  // Reset all tile styles
+  allParticipantTiles.forEach(tile => {
+    resetTileStyles(tile);
+  });
+
+  // Get the main video (pinned or first one)
+  const mainVideo = pinnedTiles.length > 0 ? pinnedTiles[0] : (allParticipantTiles.length > 0 ? allParticipantTiles[0] : null);
+  const otherVideos = mainVideo
+    ? allParticipantTiles.filter(t => t !== mainVideo)
+    : [];
+
+  // Set container to flex layout
+  remoteContainer.style.display = 'flex';
+  remoteContainer.style.flexDirection = 'column';
+  remoteContainer.style.gap = '8px';
+  remoteContainer.style.padding = isMobile ? '4px' : '8px';
+  remoteContainer.style.width = '100%';
+  remoteContainer.style.height = '100%';
+  remoteContainer.style.overflow = 'hidden';
+
+  // Main video takes most of the space
+  if (mainVideo) {
+    mainVideo.style.flex = '1';
+    mainVideo.style.width = '100%';
+    mainVideo.style.height = '100%';
+    mainVideo.style.minHeight = '0';
+    mainVideo.style.aspectRatio = '';
+    remoteContainer.appendChild(mainVideo);
+  }
+
+  // Other videos shown as small thumbnails at bottom (if any)
+  if (otherVideos.length > 0) {
+    const thumbnailsContainer = document.createElement('div');
+    thumbnailsContainer.className = 'spotlight-thumbnails';
+    thumbnailsContainer.style.display = 'flex';
+    thumbnailsContainer.style.flexDirection = 'row';
+    thumbnailsContainer.style.gap = '4px';
+    thumbnailsContainer.style.padding = '4px';
+    thumbnailsContainer.style.height = isMobile ? '80px' : '100px';
+    thumbnailsContainer.style.overflowX = 'auto';
+    thumbnailsContainer.style.overflowY = 'hidden';
+
+    otherVideos.forEach(tile => {
+      resetTileStyles(tile);
+      tile.style.width = isMobile ? '120px' : '150px';
+      tile.style.minWidth = isMobile ? '120px' : '150px';
+      tile.style.height = '100%';
+      tile.style.aspectRatio = '16/9';
+      tile.style.flexShrink = '0';
+      thumbnailsContainer.appendChild(tile);
+    });
+
+    remoteContainer.appendChild(thumbnailsContainer);
+  }
+
+  // Apply base styles
+  allParticipantTiles.forEach(tile => {
+    applyBaseTileStyles(tile);
+  });
+}
+
+function applySidebarLayout(remoteContainer, allParticipantTiles, pinnedTiles, unpinnedTiles, isMobile, isTablet) {
+  // Clean up any existing layout structures
+  cleanupLayoutStructures(remoteContainer);
+
+  // Reset all tile styles
+  allParticipantTiles.forEach(tile => {
+    resetTileStyles(tile);
+  });
+
+  // Get the main video (pinned or first one)
+  const mainVideo = pinnedTiles.length > 0 ? pinnedTiles[0] : (allParticipantTiles.length > 0 ? allParticipantTiles[0] : null);
+  const otherVideos = mainVideo
+    ? allParticipantTiles.filter(t => t !== mainVideo)
+    : allParticipantTiles;
+
+  // Set container to flex layout (row on desktop, column on mobile)
+  remoteContainer.style.display = 'flex';
+  remoteContainer.style.flexDirection = isMobile ? 'column' : 'row';
+  remoteContainer.style.gap = isMobile ? '4px' : '8px';
+  remoteContainer.style.padding = isMobile ? '4px' : '8px';
+  remoteContainer.style.width = '100%';
+  remoteContainer.style.height = '100%';
+  remoteContainer.style.overflow = 'hidden';
+
+  // Main video area
+  if (mainVideo) {
+    const mainArea = document.createElement('div');
+    mainArea.className = 'sidebar-main-area';
+    mainArea.style.flex = '1';
+    mainArea.style.minWidth = '0';
+    mainArea.style.display = 'flex';
+    mainArea.style.flexDirection = 'column';
+    mainArea.style.overflow = 'hidden';
+
+    mainVideo.style.width = '100%';
+    mainVideo.style.height = '100%';
+    mainVideo.style.flex = '1';
+    mainVideo.style.minHeight = '0';
+    mainVideo.style.aspectRatio = '';
+    mainArea.appendChild(mainVideo);
+    remoteContainer.appendChild(mainArea);
+  }
+
+  // Sidebar for other videos
+  if (otherVideos.length > 0) {
+    const sidebar = document.createElement('div');
+    sidebar.className = 'sidebar-videos';
+    sidebar.style.display = 'flex';
+    sidebar.style.flexDirection = isMobile ? 'row' : 'column';
+    sidebar.style.gap = '4px';
+    sidebar.style.overflowX = isMobile ? 'auto' : 'hidden';
+    sidebar.style.overflowY = isMobile ? 'hidden' : 'auto';
+
+    if (isMobile) {
+      sidebar.style.width = '100%';
+      sidebar.style.height = '120px';
+      sidebar.style.paddingTop = '4px';
+      sidebar.style.borderTop = '1px solid rgba(255, 255, 255, 0.2)';
+    } else {
+      sidebar.style.width = isTablet ? '200px' : '300px';
+      sidebar.style.minWidth = isTablet ? '180px' : '250px';
+      sidebar.style.maxWidth = isTablet ? '250px' : '400px';
+      sidebar.style.paddingLeft = '8px';
+      sidebar.style.borderLeft = '1px solid rgba(255, 255, 255, 0.2)';
+    }
+
+    otherVideos.forEach(tile => {
+      resetTileStyles(tile);
+      tile.style.aspectRatio = '16/9';
+      tile.style.flexShrink = '0';
+      if (isMobile) {
+        tile.style.width = '150px';
+        tile.style.minWidth = '150px';
+        tile.style.height = '100%';
+      } else {
+        tile.style.width = '100%';
+        tile.style.minHeight = '120px';
+        tile.style.maxHeight = '200px';
+      }
+      sidebar.appendChild(tile);
+    });
+
+    remoteContainer.appendChild(sidebar);
+  }
+
+  // Apply base styles
+  allParticipantTiles.forEach(tile => {
+    applyBaseTileStyles(tile);
+  });
+}
+
+function applyTiledLayout(remoteContainer, allParticipantTiles, isMobile, isTablet, isSmallDesktop) {
+  // Clean up any existing layout structures
+  cleanupLayoutStructures(remoteContainer);
+
+  // Reset all tile styles
+  allParticipantTiles.forEach(tile => {
+    resetTileStyles(tile);
+  });
+
+  const participantCount = allParticipantTiles.length;
+
+  // Calculate optimal grid for tiled layout
+  const getMaxColumns = () => {
+    if (isMobile) {
+      return window.innerHeight > window.innerWidth ? 2 : 3;
+    } else if (isTablet) {
+      return 3;
+    } else if (isSmallDesktop) {
+      return 4;
+    } else {
+      return 5;
+    }
+  };
+
+  const maxColumns = getMaxColumns();
+  const gridColumns = Math.min(maxColumns, participantCount);
+  const gridRows = Math.ceil(participantCount / gridColumns);
+
+  // Set container to grid
+  remoteContainer.style.display = 'grid';
+  remoteContainer.style.gridTemplateColumns = `repeat(${gridColumns}, 1fr)`;
+  remoteContainer.style.gridTemplateRows = `repeat(${gridRows}, 1fr)`;
+  remoteContainer.style.gap = isMobile ? '4px' : '8px';
+  remoteContainer.style.padding = isMobile ? '4px' : '8px';
+  remoteContainer.style.width = '100%';
+  remoteContainer.style.height = '100%';
+  remoteContainer.style.overflow = participantCount > 16 ? 'auto' : 'hidden';
+
+  // Apply equal sizes to all tiles
+  allParticipantTiles.forEach(tile => {
+    resetTileStyles(tile);
+    tile.style.width = '100%';
+    tile.style.height = '100%';
+    tile.style.aspectRatio = '16/9';
+    tile.style.minHeight = '0';
+    applyBaseTileStyles(tile);
+  });
+}
+
+function cleanupLayoutStructures(remoteContainer) {
+  // Remove any existing layout structures
+  const sidebar = remoteContainer.querySelector('.unpinned-videos-sidebar');
+  const pinnedArea = remoteContainer.querySelector('.pinned-videos-area');
+  const thumbnailsContainer = remoteContainer.querySelector('.spotlight-thumbnails');
+  const mainArea = remoteContainer.querySelector('.sidebar-main-area');
+  const sidebarVideos = remoteContainer.querySelector('.sidebar-videos');
+
+  // Collect all tiles from these structures
+  const tilesToMove = [];
+  [sidebar, pinnedArea, thumbnailsContainer, mainArea, sidebarVideos].forEach(container => {
+    if (container) {
+      const tiles = Array.from(container.querySelectorAll('.video-container'));
+      tilesToMove.push(...tiles);
+      container.remove();
+    }
+  });
+
+  // Move tiles back to main container
+  tilesToMove.forEach(tile => {
+    remoteContainer.appendChild(tile);
+  });
+}
+
+function resetTileStyles(tile) {
+  tile.style.gridArea = '';
+  tile.style.flex = '';
+  tile.style.width = '';
+  tile.style.height = '';
+  tile.style.minHeight = '';
+  tile.style.maxHeight = '';
+  tile.style.aspectRatio = '';
+  tile.style.flexShrink = '';
+  tile.style.maxWidth = '';
+  tile.style.minWidth = '';
+}
+
+function applyBaseTileStyles(tile) {
+  tile.style.borderRadius = '12px';
+  tile.style.overflow = 'hidden';
+  tile.style.position = 'relative';
+  tile.style.backgroundColor = '#1B4332';
+}
+
 function updateLayout() {
   const remoteContainer = document.getElementById('remoteVideos');
   if (!remoteContainer) return;
 
-  // Check if a custom layout mode is active (not grid)
-  if (typeof currentLayoutMode !== 'undefined' && currentLayoutMode !== 'grid') {
-    // Reapply the current layout mode instead of using default grid
-    if (typeof applyLayoutMode === 'function') {
-      applyLayoutMode(currentLayoutMode);
-      return;
+  // Get current layout preference
+  let layoutMode = 'auto';
+  try {
+    if (window.getCurrentLayout && typeof window.getCurrentLayout === 'function') {
+      layoutMode = window.getCurrentLayout();
+    } else {
+      layoutMode = localStorage.getItem('videoLayout') || 'auto';
     }
+  } catch (e) {
+    layoutMode = localStorage.getItem('videoLayout') || 'auto';
   }
 
   // Get all tiles including local video (all are now in remoteVideos container)
@@ -52,6 +305,19 @@ function updateLayout() {
   let gridColumns = 1;
   let gridRows = 1;
   let useCustomLayout = false;
+
+  // Handle different layout modes
+  if (layoutMode === 'spotlight') {
+    applySpotlightLayout(remoteContainer, allParticipantTiles, pinnedTiles, unpinnedTiles, isMobile, isTablet);
+    return;
+  } else if (layoutMode === 'sidebar') {
+    applySidebarLayout(remoteContainer, allParticipantTiles, pinnedTiles, unpinnedTiles, isMobile, isTablet);
+    return;
+  } else if (layoutMode === 'tiled') {
+    applyTiledLayout(remoteContainer, allParticipantTiles, isMobile, isTablet, isSmallDesktop);
+    return;
+  }
+  // 'auto' layout continues with existing logic below
 
   // Responsive column calculation based on screen size
   const getMaxColumns = () => {

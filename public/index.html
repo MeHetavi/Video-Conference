@@ -590,13 +590,13 @@
                         <div class="w-3 h-3 rounded-full bg-white"></div>
                     </button>
 
-                    <button id="layoutButton"
+                    <button id="moreOptionsButton"
                         class="control-button hidden w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:shadow-xl"
-                        onclick="toggleLayout()" title="Change layout">
+                        onclick="toggleMoreOptions()">
                         <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
                             fill="#e3e3e3">
                             <path
-                                d="M120-240v-480q0-33 23.5-56.5T200-800h160q33 0 56.5 23.5T440-720v480q0 33-23.5 56.5T360-160H200q-33 0-56.5-23.5T120-240Zm280 0v-480q0-33 23.5-56.5T480-800h160q33 0 56.5 23.5T720-720v480q0 33-23.5 56.5T640-160H480q-33 0-56.5-23.5T400-240Zm320 0v-480q0-33 23.5-56.5T800-800h160q33 0 56.5 23.5T1040-720v480q0 33-23.5 56.5T960-160H800q-33 0-56.5-23.5T720-240Z" />
+                                d="M480-160q-33 0-56.5-23.5T400-240q0-33 23.5-56.5T480-320q33 0 56.5 23.5T560-240q0 33-23.5 56.5T480-160Zm0-240q-33 0-56.5-23.5T400-480q0-33 23.5-56.5T480-560q33 0 56.5 23.5T560-480q0 33-23.5 56.5T480-400Zm0-240q-33 0-56.5-23.5T400-720q0-33 23.5-56.5T480-800q33 0 56.5 23.5T560-720q0 33-23.5 56.5T480-640Z" />
                         </svg>
                     </button>
 
@@ -622,6 +622,16 @@
                             fill="#e3e3e3">
                             <path
                                 d="m403-96-22-114q-23-9-44.5-21T296-259l-110 37-77-133 87-76q-2-12-3-24t-1-25q0-13 1-25t3-24l-87-76 77-133 110 37q19-16 40.5-28t44.5-21l22-114h154l22 114q23 9 44.5 21t40.5 28l110-37 77 133-87 76q2 12 3 24t1 25q0 13-1 25t-3 24l87 76-77 133-110-37q-19 16-40.5 28T579-210L557-96H403Zm59-72h36l19-99q38-7 71-26t57-48l96 32 18-30-76-67q6-17 9.5-35.5T696-480q0-20-3.5-38.5T683-554l76-67-18-30-96 32q-24-29-57-48t-71-26l-19-99h-36l-19 99q-38 7-71 26t-57 48l-96-32-18 30 76 67q-6 17-9.5 35.5T264-480q0 20 3.5 38.5T277-406l-76 67 18 30 96-32q24 29 57 48t71 26l19 99Zm18-168q60 0 102-42t42-102q0-60-42-102t-102-42q-60 0-102 42t-42 102q0 60 42 102t102 42Zm0-144Z" />
+                        </svg>
+                    </button>
+
+                    <button id="layoutButton"
+                        class="control-button hidden w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:shadow-xl"
+                        onclick="toggleLayoutDialog()" title="Change layout">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"
+                            fill="#e3e3e3">
+                            <path
+                                d="M120-120v-720h720v720H120Zm80-400h280v-240H200v240Zm0 320h280v-240H200v240Zm360-320h280v-240H560v240Zm0 320h280v-240H560v240Z" />
                         </svg>
                     </button>
                     <button id="exitButton"
@@ -707,6 +717,81 @@
                 <button class="confirm-modal-btn confirm-modal-btn-confirm" id="confirmModalConfirmBtn">
                     Confirm
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layout Selection Dialog -->
+    <div id="layoutDialog" class="layout-dialog hidden">
+        <div class="layout-dialog-overlay" onclick="toggleLayoutDialog()"></div>
+        <div class="layout-dialog-content">
+            <div class="layout-dialog-header">
+                <h3 class="layout-dialog-title">Change layout</h3>
+                <button class="layout-dialog-close" onclick="toggleLayoutDialog()" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <p class="layout-dialog-subtitle">Selection is saved for future meetings</p>
+            <div class="layout-options">
+                <label class="layout-option" data-layout="auto">
+                    <input type="radio" name="layout" value="auto" class="layout-radio">
+                    <div class="layout-option-content">
+                        <span class="layout-option-label">Auto</span>
+                        <div class="layout-preview layout-preview-auto">
+                            <div class="preview-main"></div>
+                            <div class="preview-small"></div>
+                            <div class="preview-small"></div>
+                            <div class="preview-small"></div>
+                        </div>
+                    </div>
+                </label>
+                <label class="layout-option" data-layout="tiled">
+                    <input type="radio" name="layout" value="tiled" class="layout-radio">
+                    <div class="layout-option-content">
+                        <span class="layout-option-label">Tiled</span>
+                        <div class="layout-preview layout-preview-tiled">
+                            <div class="preview-tile"></div>
+                            <div class="preview-tile"></div>
+                            <div class="preview-tile"></div>
+                            <div class="preview-tile"></div>
+                            <div class="preview-tile"></div>
+                            <div class="preview-tile"></div>
+                            <div class="preview-tile"></div>
+                            <div class="preview-tile"></div>
+                            <div class="preview-tile"></div>
+                            <div class="preview-tile"></div>
+                            <div class="preview-tile"></div>
+                            <div class="preview-tile"></div>
+                            <div class="preview-tile"></div>
+                            <div class="preview-tile"></div>
+                            <div class="preview-tile"></div>
+                            <div class="preview-tile"></div>
+                        </div>
+                    </div>
+                </label>
+                <label class="layout-option" data-layout="spotlight">
+                    <input type="radio" name="layout" value="spotlight" class="layout-radio">
+                    <div class="layout-option-content">
+                        <span class="layout-option-label">Spotlight</span>
+                        <div class="layout-preview layout-preview-spotlight">
+                            <div class="preview-spotlight-main"></div>
+                        </div>
+                    </div>
+                </label>
+                <label class="layout-option" data-layout="sidebar">
+                    <input type="radio" name="layout" value="sidebar" class="layout-radio">
+                    <div class="layout-option-content">
+                        <span class="layout-option-label">Sidebar</span>
+                        <div class="layout-preview layout-preview-sidebar">
+                            <div class="preview-sidebar-main"></div>
+                            <div class="preview-sidebar-list">
+                                <div class="preview-sidebar-item"></div>
+                                <div class="preview-sidebar-item"></div>
+                                <div class="preview-sidebar-item"></div>
+                            </div>
+                        </div>
+                    </div>
+                </label>
             </div>
         </div>
     </div>
