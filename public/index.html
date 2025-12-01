@@ -476,8 +476,9 @@
                 <!-- Main grid for all videos (local + remote) -->
                 <div id="remoteVideos" class="w-full h-full grid gap-4"></div>
 
-                <!-- Local video container (included in grid) -->
-                <div id="localVideoContainer" class="hidden">
+                <!-- Local video container (will be positioned as overlay in bottom-right) -->
+                <div id="localVideoContainer" class="absolute bottom-4 right-4 z-20"
+                    style="width: 300px; max-width: 25vw;">
                     <div id="localMedia" class="w-full h-full"></div>
                 </div>
             </div>
