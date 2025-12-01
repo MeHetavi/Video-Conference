@@ -18,6 +18,15 @@ function updateLayout() {
   const remoteContainer = document.getElementById('remoteVideos');
   if (!remoteContainer) return;
 
+  // Check if a custom layout mode is active (not grid)
+  if (typeof currentLayoutMode !== 'undefined' && currentLayoutMode !== 'grid') {
+    // Reapply the current layout mode instead of using default grid
+    if (typeof applyLayoutMode === 'function') {
+      applyLayoutMode(currentLayoutMode);
+      return;
+    }
+  }
+
   // Get all tiles including local video (all are now in remoteVideos container)
   const allTiles = Array.from(remoteContainer.querySelectorAll('.video-container'));
 

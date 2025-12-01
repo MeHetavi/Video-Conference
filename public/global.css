@@ -563,6 +563,72 @@ body {
     color: #ef4444;
 }
 
+/* Layout modes */
+#remoteVideos.layout-grid {
+    display: grid;
+}
+
+#remoteVideos.layout-focus {
+    display: flex;
+    flex-direction: column;
+}
+
+#remoteVideos.layout-sidebar {
+    display: flex;
+    flex-direction: row;
+}
+
+.layout-main-video {
+    flex: 1;
+    min-height: 0;
+}
+
+.layout-main-video .video-container {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.layout-grid-videos {
+    display: grid;
+    gap: 8px;
+    overflow-y: auto;
+}
+
+.layout-sidebar-videos {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+.layout-sidebar-videos .video-container {
+    width: 100%;
+    aspect-ratio: 16/9;
+}
+
+@media (max-width: 768px) {
+    #remoteVideos.layout-sidebar {
+        flex-direction: column;
+    }
+
+    .layout-sidebar-videos {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+        max-height: 200px;
+    }
+
+    .layout-sidebar-videos .video-container {
+        min-width: 150px;
+        aspect-ratio: 16/9;
+    }
+}
+
 /* Local video overlay positioning (Google Meet style - bottom right) */
 #localVideoContainer {
     position: absolute;
@@ -859,7 +925,7 @@ body {
 
     /* Hide less important buttons on very small screens */
     #handRaiseButton,
-    #moreOptionsButton {
+    #layoutButton {
         display: none !important;
     }
 

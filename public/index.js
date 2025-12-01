@@ -204,6 +204,12 @@ async function roomOpen() {
   reveal(devicesButton)
   reveal(participantsButton)
   reveal(toggleParticipantsBtn)
+  
+  // Show layout button
+  const layoutButton = document.getElementById('layoutButton');
+  if (layoutButton) {
+    reveal(layoutButton);
+  }
 
   // Apply lobby settings to video conference
   const lobbySettings = window.lobbySettings || {};
@@ -585,9 +591,190 @@ function toggleRecording() {
   }
 }
 
-function toggleMoreOptions() {
-  // Add more options menu functionality here
-  console.log('More options clicked')
+// Layout mode state
+let currentLayoutMode = 'grid'; // 'grid', 'focus', 'sidebar'
+
+function toggleLayout() {
+  const remoteContainer = document.getElementById('remoteVideos');
+  if (!remoteContainer) return;
+
+  // Cycle through layout modes
+  const layouts = ['grid', 'focus', 'sidebar'];
+  const currentIndex = layouts.indexOf(currentLayoutMode);
+  currentLayoutMode = layouts[(currentIndex + 1) % layouts.length];
+
+  // Apply the new layout
+  applyLayoutMode(currentLayoutMode);
+  
+  // Update button icon/title to reflect current mode
+  const layoutButton = document.getElementById('layoutButton');
+  if (layoutButton) {
+    const titles = {
+      'grid': 'Grid Layout',
+      'focus': 'Focus Layout',
+      'sidebar': 'Sidebar Layout'
+    };
+    layoutButton.setAttribute('title', titles[currentLayoutMode] || 'Change layout');
+  }
+}
+
+function applyLayoutMode(mode) {
+  const remoteContainer = document.getElementById('remoteVideos');
+  if (!remoteContainer) return;
+
+  // Get all video containers
+  const allTiles = Array.from(remoteContainer.querySelectorAll('.video-container'));
+  
+  if (allTiles.length === 0) return;
+
+  // Remove any existing layout classes
+  remoteContainer.classList.remove('layout-grid', 'layout-focus', 'layout-sidebar');
+  
+  // Remove any existing layout containers
+  const existingMain = remoteContainer.querySelector('.layout-main-video');
+  const existingSidebar = remoteContainer.querySelector('.layout-sidebar-videos');
+  if (existingMain) existingMain.remove();
+  if (existingSidebar) existingSidebar.remove();
+
+  switch (mode) {
+    case 'grid':
+      // Standard grid layout
+      remoteContainer.classList.add('layout-grid');
+      remoteContainer.style.display = 'grid';
+      remoteContainer.style.gridTemplateColumns = '';
+      remoteContainer.style.gridTemplateRows = '';
+      remoteContainer.style.gap = '8px';
+      remoteContainer.style.padding = '8px';
+      
+      // Reset all tile styles
+      allTiles.forEach(tile => {
+        tile.style.gridArea = '';
+        tile.style.width = '';
+        tile.style.height = '';
+        tile.style.flex = '';
+      });
+      
+      // Calculate grid based on count
+      const count = allTiles.length;
+      if (count === 1) {
+        remoteContainer.style.gridTemplateColumns = '1fr';
+        remoteContainer.style.gridTemplateRows = '1fr';
+      } else if (count === 2) {
+        remoteContainer.style.gridTemplateColumns = '1fr 1fr';
+        remoteContainer.style.gridTemplateRows = '1fr';
+      } else if (count === 3) {
+        remoteContainer.style.gridTemplateColumns = '1fr 1fr';
+        remoteContainer.style.gridTemplateRows = '1fr 1fr';
+        allTiles[0].style.gridArea = '1 / 1 / 3 / 2';
+        allTiles[1].style.gridArea = '1 / 2 / 2 / 3';
+        allTiles[2].style.gridArea = '2 / 2 / 3 / 3';
+      } else if (count === 4) {
+        remoteContainer.style.gridTemplateColumns = '1fr 1fr';
+        remoteContainer.style.gridTemplateRows = '1fr 1fr';
+      } else {
+        const columns = Math.ceil(Math.sqrt(count));
+        remoteContainer.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+        remoteContainer.style.gridTemplateRows = `repeat(${Math.ceil(count / columns)}, 1fr)`;
+      }
+      break;
+
+    case 'focus':
+      // Focus layout: one large video, others in grid below
+      remoteContainer.classList.add('layout-focus');
+      remoteContainer.style.display = 'flex';
+      remoteContainer.style.flexDirection = 'column';
+      remoteContainer.style.gap = '8px';
+      remoteContainer.style.padding = '8px';
+      
+      const mainVideo = document.createElement('div');
+      mainVideo.className = 'layout-main-video';
+      mainVideo.style.cssText = `
+        flex: 1;
+        min-height: 60%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+      
+      const gridVideos = document.createElement('div');
+      gridVideos.className = 'layout-grid-videos';
+      gridVideos.style.cssText = `
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 8px;
+        max-height: 40%;
+        overflow-y: auto;
+      `;
+      
+      // First tile goes to main, rest to grid
+      if (allTiles.length > 0) {
+        mainVideo.appendChild(allTiles[0]);
+        allTiles.slice(1).forEach(tile => {
+          gridVideos.appendChild(tile);
+        });
+      }
+      
+      remoteContainer.innerHTML = '';
+      remoteContainer.appendChild(mainVideo);
+      if (allTiles.length > 1) {
+        remoteContainer.appendChild(gridVideos);
+      }
+      break;
+
+    case 'sidebar':
+      // Sidebar layout: one large video, others in sidebar
+      remoteContainer.classList.add('layout-sidebar');
+      remoteContainer.style.display = 'flex';
+      remoteContainer.style.flexDirection = 'row';
+      remoteContainer.style.gap = '8px';
+      remoteContainer.style.padding = '8px';
+      
+      const mainVideoSidebar = document.createElement('div');
+      mainVideoSidebar.className = 'layout-main-video';
+      mainVideoSidebar.style.cssText = `
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+      `;
+      
+      const sidebarVideos = document.createElement('div');
+      sidebarVideos.className = 'layout-sidebar-videos';
+      sidebarVideos.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 300px;
+        max-width: 25%;
+        overflow-y: auto;
+        flex-shrink: 0;
+      `;
+      
+      // First tile goes to main, rest to sidebar
+      if (allTiles.length > 0) {
+        mainVideoSidebar.appendChild(allTiles[0]);
+        allTiles.slice(1).forEach(tile => {
+          tile.style.width = '100%';
+          tile.style.aspectRatio = '16/9';
+          sidebarVideos.appendChild(tile);
+        });
+      }
+      
+      remoteContainer.innerHTML = '';
+      remoteContainer.appendChild(mainVideoSidebar);
+      if (allTiles.length > 1) {
+        remoteContainer.appendChild(sidebarVideos);
+      }
+      break;
+  }
+  
+  // Update layout after applying mode
+  // For grid mode, use the existing updateLayout function
+  // For other modes, the layout is already applied above
+  if (mode === 'grid' && typeof updateLayout === 'function') {
+    updateLayout();
+  }
 }
 
 // Toast Notification System
