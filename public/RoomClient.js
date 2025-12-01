@@ -797,7 +797,6 @@ class RoomClient {
     this.latestCapturedPose = null
     this._isOpen = false
     this.eventListeners = new Map()
-    this.mutedParticipants = new Set() // Track muted participants by socketId
 
     Object.keys(_EVENTS).forEach(
       function (evt) {
@@ -1231,38 +1230,40 @@ class RoomClient {
         overlay.className = 'video-overlay';
         overlay.style.zIndex = '2';
         const isPinned = this.pinnedVideos.get(participant.socketId) || false;
-        const isMuted = this.isParticipantMuted(participant.socketId);
-        const muteButtonHtml = this.isTrainer && participant.socketId !== this.socket.id
-          ? `<button class="video-mute-btn" onclick="event.stopPropagation(); rc.toggleMuteParticipant('${participant.socketId}')" title="${isMuted ? 'Unmute' : 'Mute'} participant">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="${isMuted ? '#ef4444' : 'white'}">
-                ${isMuted
-            ? '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>'
-            : '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>'
-          }
-              </svg>
-            </button>`
-          : '';
 
-        overlay.innerHTML = `
-          <div class="video-info">
-            <span class="video-name">${participant.name}</span>
-            ${participant.isTrainer ? '<span class="video-trainer-badge">Trainer</span>' : ''}
-          </div>
-          ${muteButtonHtml}
-        `;
+        // Create video info div
+        const videoInfo = document.createElement('div');
+        videoInfo.className = 'video-info';
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'video-name';
+        nameSpan.textContent = participant.name;
+        videoInfo.appendChild(nameSpan);
 
-        // Add click event listener to container to pin/unpin
-        // Allow clicking anywhere on the tile (including overlay) to pin/unpin.
-        // Ensure we only ever attach ONE pin handler per container to avoid double-toggles.
-        if (!container.dataset.pinHandlerAttached) {
-          container.dataset.pinHandlerAttached = 'true';
-          container.style.cursor = 'pointer';
-          container.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.togglePinVideo(participant.socketId);
-          });
+        if (participant.isTrainer) {
+          const trainerBadge = document.createElement('span');
+          trainerBadge.className = 'video-trainer-badge';
+          trainerBadge.textContent = 'Trainer';
+          videoInfo.appendChild(trainerBadge);
         }
+
+        // Create pin button
+        const pinButton = document.createElement('button');
+        pinButton.className = 'video-pin-btn';
+        pinButton.type = 'button';
+        pinButton.setAttribute('aria-label', isPinned ? 'Unpin video' : 'Pin video');
+        pinButton.innerHTML = isPinned
+          ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M16 12V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v8c0 1.1-.9 2-2 2s-2 .9-2 2v2h16v-2c0-1.1-.9-2-2-2s-2-.9-2-2z"/></svg>'
+          : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M16 12V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v8c0 1.1-.9 2-2 2s-2 .9-2 2v2h16v-2c0-1.1-.9-2-2-2s-2-.9-2-2z" opacity="0.6"/></svg>';
+
+        // Add click handler to pin button
+        pinButton.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.togglePinVideo(participant.socketId);
+        });
+
+        overlay.appendChild(videoInfo);
+        overlay.appendChild(pinButton);
 
         // Update container pinned state
         if (isPinned) {
@@ -1289,12 +1290,42 @@ class RoomClient {
         // Update overlay
         const overlay = container.querySelector('.video-overlay');
         if (overlay) {
-          overlay.innerHTML = `
-            <div class="video-info">
-              <span class="video-name">${participant.name}</span>
-              ${participant.isTrainer ? '<span class="video-trainer-badge">Trainer</span>' : ''}
-            </div>
+          // Get or create video info
+          let videoInfo = overlay.querySelector('.video-info');
+          if (!videoInfo) {
+            videoInfo = document.createElement('div');
+            videoInfo.className = 'video-info';
+            overlay.insertBefore(videoInfo, overlay.firstChild);
+          }
+
+          // Update video info content
+          videoInfo.innerHTML = `
+            <span class="video-name">${participant.name}</span>
+            ${participant.isTrainer ? '<span class="video-trainer-badge">Trainer</span>' : ''}
           `;
+
+          // Ensure pin button exists
+          let pinButton = overlay.querySelector('.video-pin-btn');
+          if (!pinButton) {
+            pinButton = document.createElement('button');
+            pinButton.className = 'video-pin-btn';
+            pinButton.type = 'button';
+            overlay.appendChild(pinButton);
+
+            // Add click handler to pin button
+            pinButton.addEventListener('click', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              this.togglePinVideo(participant.socketId);
+            });
+          }
+
+          // Update pin button icon based on pinned state
+          const isPinned = this.pinnedVideos.get(participant.socketId) || false;
+          pinButton.setAttribute('aria-label', isPinned ? 'Unpin video' : 'Pin video');
+          pinButton.innerHTML = isPinned
+            ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M16 12V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v8c0 1.1-.9 2-2 2s-2 .9-2 2v2h16v-2c0-1.1-.9-2-2-2s-2-.9-2-2z"/></svg>'
+            : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M16 12V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v8c0 1.1-.9 2-2 2s-2 .9-2 2v2h16v-2c0-1.1-.9-2-2-2s-2-.9-2-2z" opacity="0.6"/></svg>';
         }
       }
     });
@@ -2021,39 +2052,42 @@ class RoomClient {
 
         // Set the overlay content
         const isPinned = this.pinnedVideos.get(appData.producerSocketId) || false;
-        const isMuted = this.isParticipantMuted(appData.producerSocketId);
-        const muteButtonHtml = this.isTrainer && appData.producerSocketId !== this.socket.id
-          ? `<button class="video-mute-btn" onclick="event.stopPropagation(); rc.toggleMuteParticipant('${appData.producerSocketId}')" title="${isMuted ? 'Unmute' : 'Mute'} participant">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="${isMuted ? '#ef4444' : 'white'}">
-                ${isMuted
-            ? '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>'
-            : '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>'
-          }
-              </svg>
-            </button>`
-          : '';
 
-        overlay.innerHTML = `
-          <div class="video-info">
-            <span class="video-name">${participantName}</span>
-            ${isTrainer ? '<span class="video-trainer-badge">Trainer</span>' : ''}
-          </div>
-          ${muteButtonHtml}
+        // Get or create video info
+        let videoInfo = overlay.querySelector('.video-info');
+        if (!videoInfo) {
+          videoInfo = document.createElement('div');
+          videoInfo.className = 'video-info';
+          overlay.insertBefore(videoInfo, overlay.firstChild);
+        }
+
+        // Update video info content
+        videoInfo.innerHTML = `
+          <span class="video-name">${participantName}</span>
+          ${isTrainer ? '<span class="video-trainer-badge">Trainer</span>' : ''}
         `;
 
-        // Add click event listener to container to pin/unpin
-        // Remove any legacy onclick handler and rely on addEventListener + a guard flag
-        container.onclick = null;
+        // Create or update pin button
+        let pinButton = overlay.querySelector('.video-pin-btn');
+        if (!pinButton) {
+          pinButton = document.createElement('button');
+          pinButton.className = 'video-pin-btn';
+          pinButton.type = 'button';
+          overlay.appendChild(pinButton);
 
-        if (!container.dataset.pinHandlerAttached) {
-          container.dataset.pinHandlerAttached = 'true';
-          container.style.cursor = 'pointer';
-          container.addEventListener('click', (e) => {
+          // Add click handler to pin button
+          pinButton.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             this.togglePinVideo(appData.producerSocketId);
           });
         }
+
+        // Update pin button icon based on pinned state
+        pinButton.setAttribute('aria-label', isPinned ? 'Unpin video' : 'Pin video');
+        pinButton.innerHTML = isPinned
+          ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M16 12V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v8c0 1.1-.9 2-2 2s-2 .9-2 2v2h16v-2c0-1.1-.9-2-2-2s-2-.9-2-2z"/></svg>'
+          : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M16 12V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v8c0 1.1-.9 2-2 2s-2 .9-2 2v2h16v-2c0-1.1-.9-2-2-2s-2-.9-2-2z" opacity="0.6"/></svg>';
 
         // Update container pinned state
         if (isPinned) {
@@ -2166,14 +2200,6 @@ class RoomClient {
 
       // Update participants list to reflect new video
       this.updateParticipantsList();
-
-      // Update overlay if this is a video consumer (to show mute button if needed)
-      if (kind === 'video' && appData.producerSocketId) {
-        // Use setTimeout to ensure overlay exists
-        setTimeout(() => {
-          this.updateParticipantOverlay(appData.producerSocketId);
-        }, 100);
-      }
 
       return {
         consumer,
@@ -2680,101 +2706,6 @@ class RoomClient {
   }
 
   //////// UTILITY ////////
-
-  // Check if a participant is muted
-  isParticipantMuted(socketId) {
-    return this.mutedParticipants.has(socketId);
-  }
-
-  // Get all audio consumers for a participant
-  getAudioConsumersForParticipant(socketId) {
-    const audioConsumers = [];
-    for (const [consumerId, consumer] of this.consumers.entries()) {
-      if (consumer.kind === 'audio' &&
-        consumer.appData &&
-        consumer.appData.producerSocketId === socketId) {
-        audioConsumers.push(consumer);
-      }
-    }
-    return audioConsumers;
-  }
-
-  // Toggle mute for a participant (trainer/owner only)
-  async toggleMuteParticipant(socketId) {
-    if (!this.isTrainer) {
-      console.warn('Only trainers/owners can mute participants');
-      return;
-    }
-
-    if (socketId === this.socket.id) {
-      console.warn('Cannot mute yourself');
-      return;
-    }
-
-    const isMuted = this.isParticipantMuted(socketId);
-    const audioConsumers = this.getAudioConsumersForParticipant(socketId);
-
-    if (audioConsumers.length === 0) {
-      console.warn('No audio consumers found for participant:', socketId);
-      return;
-    }
-
-    try {
-      if (isMuted) {
-        // Unmute: resume all audio consumers
-        for (const consumer of audioConsumers) {
-          await consumer.resume();
-        }
-        this.mutedParticipants.delete(socketId);
-      } else {
-        // Mute: pause all audio consumers
-        for (const consumer of audioConsumers) {
-          consumer.pause();
-        }
-        this.mutedParticipants.add(socketId);
-      }
-
-      // Update the overlay to reflect mute state
-      this.updateParticipantOverlay(socketId);
-    } catch (error) {
-      console.error('Error toggling mute:', error);
-    }
-  }
-
-  // Update participant overlay with mute button state
-  updateParticipantOverlay(socketId) {
-    const container = this.participantContainers.get(socketId);
-    if (!container) return;
-
-    const overlay = container.querySelector('.video-overlay');
-    if (!overlay) return;
-
-    const participant = this.participants.find(p => p.socketId === socketId);
-    if (!participant) return;
-
-    const isPinned = this.pinnedVideos.get(socketId) || false;
-    const isMuted = this.isParticipantMuted(socketId);
-    const isTrainer = participant.isTrainer || false;
-
-    const muteButtonHtml = this.isTrainer && socketId !== this.socket.id
-      ? `<button class="video-mute-btn" onclick="event.stopPropagation(); rc.toggleMuteParticipant('${socketId}')" title="${isMuted ? 'Unmute' : 'Mute'} participant">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="${isMuted ? '#ef4444' : 'white'}">
-            ${isMuted
-        ? '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>'
-        : '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>'
-      }
-          </svg>
-        </button>`
-      : '';
-
-    overlay.innerHTML = `
-      <div class="video-info">
-        <span class="video-name">${participant.name}</span>
-        ${isTrainer ? '<span class="video-trainer-badge">Trainer</span>' : ''}
-      </div>
-      ${muteButtonHtml}
-    `;
-  }
 
   copyURL() {
     let tmpInput = document.createElement('input')
@@ -3488,12 +3419,24 @@ class RoomClient {
   togglePinVideo(socketId) {
     const isPinned = this.pinnedVideos.get(socketId) || false;
 
+    // Helper function to update pin button icon
+    const updatePinButton = (container, pinned) => {
+      const pinButton = container.querySelector('.video-pin-btn');
+      if (pinButton) {
+        pinButton.setAttribute('aria-label', pinned ? 'Unpin video' : 'Pin video');
+        pinButton.innerHTML = pinned
+          ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M16 12V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v8c0 1.1-.9 2-2 2s-2 .9-2 2v2h16v-2c0-1.1-.9-2-2-2s-2-.9-2-2z"/></svg>'
+          : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M16 12V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v8c0 1.1-.9 2-2 2s-2 .9-2 2v2h16v-2c0-1.1-.9-2-2-2s-2-.9-2-2z" opacity="0.6"/></svg>';
+      }
+    };
+
     // If clicking on already pinned video, unpin it
     if (isPinned) {
       this.pinnedVideos.set(socketId, false);
       const containers = Array.from(document.querySelectorAll(`[data-socket-id="${socketId}"]`));
       containers.forEach(container => {
         container.classList.remove('pinned');
+        updatePinButton(container, false);
       });
     } else {
       // Unpin any currently pinned video (only one can be pinned)
@@ -3503,6 +3446,7 @@ class RoomClient {
           const existingContainers = Array.from(document.querySelectorAll(`[data-socket-id="${existingSocketId}"]`));
           existingContainers.forEach(container => {
             container.classList.remove('pinned');
+            updatePinButton(container, false);
           });
         }
       });
@@ -3512,6 +3456,7 @@ class RoomClient {
       const containers = Array.from(document.querySelectorAll(`[data-socket-id="${socketId}"]`));
       containers.forEach(container => {
         container.classList.add('pinned');
+        updatePinButton(container, true);
       });
     }
 
