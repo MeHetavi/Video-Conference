@@ -209,6 +209,8 @@ async function roomOpen() {
   const lobbySettings = window.lobbySettings || {};
   const audioSelect = document.getElementById('audioSelect');
   const videoSelect = document.getElementById('videoSelect');
+  const audioDeviceDropdown = document.getElementById('audioDeviceDropdown');
+  const videoDeviceDropdown = document.getElementById('videoDeviceDropdown');
 
   // Set device selections if available
   if (lobbySettings.audioDeviceId && audioSelect) {
@@ -216,6 +218,9 @@ async function roomOpen() {
     const setAudioDevice = () => {
       if (audioSelect.options.length > 0) {
         audioSelect.value = lobbySettings.audioDeviceId;
+        if (audioDeviceDropdown) {
+          audioDeviceDropdown.value = lobbySettings.audioDeviceId;
+        }
       } else {
         setTimeout(setAudioDevice, 100);
       }
@@ -227,6 +232,9 @@ async function roomOpen() {
     const setVideoDevice = () => {
       if (videoSelect.options.length > 0) {
         videoSelect.value = lobbySettings.videoDeviceId;
+        if (videoDeviceDropdown) {
+          videoDeviceDropdown.value = lobbySettings.videoDeviceId;
+        }
       } else {
         setTimeout(setVideoDevice, 100);
       }
@@ -250,14 +258,20 @@ async function roomOpen() {
           await rc.produce(RoomClient.mediaType.audio, deviceId);
           hide(startAudioButton);
           reveal(stopAudioButton);
+          if (audioDeviceDropdown) {
+            reveal(audioDeviceDropdown);
+            if (deviceId) audioDeviceDropdown.value = deviceId;
+          }
         } catch (error) {
           console.warn('Failed to start audio with lobby settings:', error);
           reveal(startAudioButton);
           hide(stopAudioButton);
+          if (audioDeviceDropdown) hide(audioDeviceDropdown);
         }
       } else {
         reveal(startAudioButton);
         hide(stopAudioButton);
+        if (audioDeviceDropdown) hide(audioDeviceDropdown);
       }
 
       if (lobbySettings.camEnabled) {
@@ -266,14 +280,20 @@ async function roomOpen() {
           await rc.produce(RoomClient.mediaType.video, deviceId);
           hide(startVideoButton);
           reveal(stopVideoButton);
+          if (videoDeviceDropdown) {
+            reveal(videoDeviceDropdown);
+            if (deviceId) videoDeviceDropdown.value = deviceId;
+          }
         } catch (error) {
           console.warn('Failed to start video with lobby settings:', error);
           reveal(startVideoButton);
           hide(stopVideoButton);
+          if (videoDeviceDropdown) hide(videoDeviceDropdown);
         }
       } else {
         reveal(startVideoButton);
         hide(stopVideoButton);
+        if (videoDeviceDropdown) hide(videoDeviceDropdown);
       }
     } catch (error) {
       console.error('Error applying lobby settings:', error);
@@ -313,19 +333,35 @@ function addListeners() {
   rc.on(RoomClient.EVENTS.stopAudio, () => {
     hide(stopAudioButton)
     reveal(startAudioButton)
+    const audioDeviceDropdown = document.getElementById('audioDeviceDropdown')
+    if (audioDeviceDropdown) {
+      hide(audioDeviceDropdown)
+    }
   })
   rc.on(RoomClient.EVENTS.startAudio, () => {
     hide(startAudioButton)
     reveal(stopAudioButton)
+    const audioDeviceDropdown = document.getElementById('audioDeviceDropdown')
+    if (audioDeviceDropdown) {
+      reveal(audioDeviceDropdown)
+    }
   })
 
   rc.on(RoomClient.EVENTS.startVideo, () => {
     hide(startVideoButton)
     reveal(stopVideoButton)
+    const videoDeviceDropdown = document.getElementById('videoDeviceDropdown')
+    if (videoDeviceDropdown) {
+      reveal(videoDeviceDropdown)
+    }
   })
   rc.on(RoomClient.EVENTS.stopVideo, () => {
     hide(stopVideoButton)
     reveal(startVideoButton)
+    const videoDeviceDropdown = document.getElementById('videoDeviceDropdown')
+    if (videoDeviceDropdown) {
+      hide(videoDeviceDropdown)
+    }
   })
   rc.on(RoomClient.EVENTS.exitRoom, () => {
     hide(control)
@@ -362,6 +398,26 @@ function initEnumerateDevices() {
       stream.getTracks().forEach(function (track) {
         track.stop()
       })
+      
+      // Listen for device changes
+      if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+        navigator.mediaDevices.addEventListener('devicechange', () => {
+          // Clear and repopulate dropdowns
+          const audioDeviceDropdown = document.getElementById('audioDeviceDropdown');
+          const videoDeviceDropdown = document.getElementById('videoDeviceDropdown');
+          if (audioDeviceDropdown) {
+            const currentValue = audioDeviceDropdown.value;
+            audioDeviceDropdown.innerHTML = '<option value="">Select mic</option>';
+            audioDeviceDropdown.value = currentValue;
+          }
+          if (videoDeviceDropdown) {
+            const currentValue = videoDeviceDropdown.value;
+            videoDeviceDropdown.innerHTML = '<option value="">Select camera</option>';
+            videoDeviceDropdown.value = currentValue;
+          }
+          enumerateDevices();
+        });
+      }
     })
     .catch((err) => {
       console.error('Access denied for audio/video: ', err)
@@ -370,23 +426,77 @@ function initEnumerateDevices() {
 
 function enumerateDevices() {
   // Load mediaDevice options
-  navigator.mediaDevices.enumerateDevices().then((devices) =>
+  const audioDeviceDropdown = document.getElementById('audioDeviceDropdown');
+  const videoDeviceDropdown = document.getElementById('videoDeviceDropdown');
+  
+  // Store current values before clearing
+  const currentAudioValue = audioDeviceDropdown ? audioDeviceDropdown.value : null;
+  const currentVideoValue = videoDeviceDropdown ? videoDeviceDropdown.value : null;
+  
+  // Clear dropdowns but keep the first option
+  if (audioDeviceDropdown) {
+    audioDeviceDropdown.innerHTML = '<option value="">Select mic</option>';
+  }
+  if (videoDeviceDropdown) {
+    videoDeviceDropdown.innerHTML = '<option value="">Select camera</option>';
+  }
+  
+  navigator.mediaDevices.enumerateDevices().then((devices) => {
+    const seenAudioDevices = new Set();
+    const seenVideoDevices = new Set();
+    
     devices.forEach((device) => {
       let el = null
+      let dropdownEl = null
+      let seenSet = null
+      
       if ('audioinput' === device.kind) {
         el = audioSelect
+        dropdownEl = audioDeviceDropdown
+        seenSet = seenAudioDevices
       } else if ('videoinput' === device.kind) {
         el = videoSelect
+        dropdownEl = videoDeviceDropdown
+        seenSet = seenVideoDevices
       }
       if (!el) return
 
+      // Skip if we've already added this device
+      if (seenSet.has(device.deviceId)) return
+      seenSet.add(device.deviceId)
+
       let option = document.createElement('option')
       option.value = device.deviceId
-      option.innerText = device.label
+      option.innerText = device.label || (device.kind === 'audioinput' ? 'Microphone' : 'Camera')
       el.appendChild(option)
+      
+      // Also add to the control bar dropdown
+      if (dropdownEl) {
+        const dropdownOption = document.createElement('option')
+        dropdownOption.value = device.deviceId
+        dropdownOption.innerText = device.label || (device.kind === 'audioinput' ? 'Microphone' : 'Camera')
+        dropdownEl.appendChild(dropdownOption)
+      }
+      
       isEnumerateDevices = true
     })
-  )
+    
+    // Restore or sync dropdown values
+    if (audioSelect && audioDeviceDropdown) {
+      if (currentAudioValue && audioDeviceDropdown.querySelector(`option[value="${currentAudioValue}"]`)) {
+        audioDeviceDropdown.value = currentAudioValue
+      } else if (audioSelect.value) {
+        audioDeviceDropdown.value = audioSelect.value
+      }
+    }
+    if (videoSelect && videoDeviceDropdown) {
+      if (currentVideoValue && videoDeviceDropdown.querySelector(`option[value="${currentVideoValue}"]`)) {
+        videoDeviceDropdown.value = currentVideoValue
+      } else if (videoSelect.value) {
+        videoDeviceDropdown.value = videoSelect.value
+      }
+    }
+  })
 }
 
 function positionParticipantsPanel() {
@@ -659,3 +769,47 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
+
+// Handle audio device change from dropdown
+async function handleAudioDeviceChange(deviceId) {
+  if (!rc || !deviceId) return
+  
+  const audioSelect = document.getElementById('audioSelect')
+  if (audioSelect) {
+    audioSelect.value = deviceId
+  }
+  
+  // If audio is currently active, switch to the new device
+  if (rc.producerLabel && rc.producerLabel.has(RoomClient.mediaType.audio)) {
+    try {
+      // Close current audio producer
+      await rc.closeProducer(RoomClient.mediaType.audio)
+      // Start with new device
+      await rc.produce(RoomClient.mediaType.audio, deviceId)
+    } catch (error) {
+      console.error('Error switching audio device:', error)
+    }
+  }
+}
+
+// Handle video device change from dropdown
+async function handleVideoDeviceChange(deviceId) {
+  if (!rc || !deviceId) return
+  
+  const videoSelect = document.getElementById('videoSelect')
+  if (videoSelect) {
+    videoSelect.value = deviceId
+  }
+  
+  // If video is currently active, switch to the new device
+  if (rc.producerLabel && rc.producerLabel.has(RoomClient.mediaType.video)) {
+    try {
+      // Close current video producer
+      await rc.closeProducer(RoomClient.mediaType.video)
+      // Start with new device
+      await rc.produce(RoomClient.mediaType.video, deviceId)
+    } catch (error) {
+      console.error('Error switching video device:', error)
+    }
+  }
+}
