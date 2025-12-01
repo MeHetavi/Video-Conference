@@ -1424,12 +1424,27 @@ class RoomClient {
     }
 
     try {
+      // Validate router RTP capabilities before loading
+      if (!routerRtpCapabilities || !routerRtpCapabilities.codecs || !Array.isArray(routerRtpCapabilities.codecs)) {
+        console.error('Invalid router RTP capabilities:', routerRtpCapabilities);
+        throw new Error('Invalid router RTP capabilities received from server');
+      }
+
       await device.load({
         routerRtpCapabilities
       });
+
+      // Verify device loaded successfully
+      if (!device.rtpCapabilities || !device.rtpCapabilities.codecs || device.rtpCapabilities.codecs.length === 0) {
+        console.error('Device loaded but RTP capabilities are invalid');
+        throw new Error('Device RTP capabilities are invalid after loading');
+      }
+
+      console.log('Device loaded successfully with', device.rtpCapabilities.codecs.length, 'codecs');
       return device;
     } catch (error) {
       console.error('Failed to load device:', error);
+      console.error('Router RTP capabilities:', routerRtpCapabilities);
       throw error;
     }
   }
@@ -1520,6 +1535,8 @@ class RoomClient {
 
       // only one needed
       this.consumerTransport = device.createRecvTransport(data)
+      this.consumerTransport._isConnected = false; // Track connection state
+
       this.consumerTransport.on(
         'connect',
         function ({ dtlsParameters }, callback, errback) {
@@ -1528,8 +1545,14 @@ class RoomClient {
               transport_id: this.consumerTransport.id,
               dtlsParameters
             })
-            .then(callback)
-            .catch(errback)
+            .then(() => {
+              this.consumerTransport._isConnected = true;
+              callback();
+            })
+            .catch((err) => {
+              this.consumerTransport._isConnected = false;
+              errback(err);
+            })
         }.bind(this)
       )
 
@@ -2188,6 +2211,35 @@ class RoomClient {
         return null;
       }
 
+      // Log codec information for debugging
+      console.log(`Attempting to consume ${kind} with codecs:`,
+        rtpParameters.codecs.map(c => `${c.mimeType}/${c.clockRate}`).join(', '));
+
+      // Check if device can consume these RTP parameters
+      try {
+        // The device should have a method to check if it can consume
+        // This is done internally by mediasoup, but we can validate codecs match
+        const deviceCodecs = this.device.rtpCapabilities.codecs || [];
+        const requiredCodecs = rtpParameters.codecs || [];
+
+        const canConsume = requiredCodecs.some(reqCodec => {
+          return deviceCodecs.some(devCodec => {
+            return devCodec.mimeType === reqCodec.mimeType &&
+              devCodec.clockRate === reqCodec.clockRate;
+          });
+        });
+
+        if (!canConsume) {
+          console.error('No matching codecs found between device and RTP parameters');
+          console.error('Device codecs:', deviceCodecs.map(c => `${c.mimeType}/${c.clockRate}`));
+          console.error('Required codecs:', requiredCodecs.map(c => `${c.mimeType}/${c.clockRate}`));
+          return null;
+        }
+      } catch (e) {
+        console.warn('Could not validate codec compatibility:', e);
+        // Continue anyway - mediasoup will validate
+      }
+
       // Determine media type based on kind
       const mediaTypeValue = kind === 'audio' ? mediaType.audio : mediaType.video;
 
@@ -2196,41 +2248,91 @@ class RoomClient {
       // Ensure transport is connected before consuming
       // Wait for transport to be ready (with timeout)
       let retries = 0;
-      const maxRetries = 10;
-      while (retries < maxRetries) {
+      const maxRetries = 20; // Increased retries
+      let transportReady = false;
+
+      while (retries < maxRetries && !transportReady) {
         try {
           const transportState = this.consumerTransport.connectionState;
-          if (transportState === 'connected') {
+          const isConnected = this.consumerTransport._isConnected === true;
+
+          if (transportState === 'connected' && isConnected) {
+            transportReady = true;
             break; // Transport is ready
           } else if (transportState === 'failed' || transportState === 'closed') {
-            throw new Error(`Consumer transport is ${transportState}`);
+            console.error(`Consumer transport is ${transportState}, cannot consume`);
+            return null;
           }
           // Wait a bit before checking again
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 150));
           retries++;
         } catch (e) {
-          // connectionState might not be available, try consuming anyway
-          if (e.message && e.message.includes('transport')) {
-            throw e;
+          // connectionState might not be available, check our custom flag
+          if (this.consumerTransport._isConnected === true) {
+            transportReady = true;
+            break;
           }
-          break;
+          if (e.message && e.message.includes('transport')) {
+            console.error('Transport error:', e);
+            return null;
+          }
+          // Continue waiting
+          await new Promise(resolve => setTimeout(resolve, 150));
+          retries++;
         }
       }
 
-      // Add a small delay to ensure transport is ready (helps with race conditions)
-      await new Promise(resolve => setTimeout(resolve, 50));
+      if (!transportReady) {
+        console.warn('Consumer transport not ready after waiting, attempting consume anyway');
+      }
 
-      const consumer = await this.consumerTransport.consume({
-        id,
-        producerId,
-        kind,
-        rtpParameters,
-        codecOptions,
-        appData: {
-          producerSocketId, // Store the socket ID of the producer
-          mediaType: mediaTypeValue // Store the media type
+      // Add a small delay to ensure transport is ready (helps with race conditions)
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Wrap consume in try-catch to handle SDP errors gracefully
+      let consumer;
+      try {
+        consumer = await this.consumerTransport.consume({
+          id,
+          producerId,
+          kind,
+          rtpParameters,
+          codecOptions,
+          appData: {
+            producerSocketId, // Store the socket ID of the producer
+            mediaType: mediaTypeValue // Store the media type
+          }
+        });
+      } catch (consumeError) {
+        // Check if it's an SDP-related error
+        if (consumeError.message && (
+          consumeError.message.includes('setRemoteDescription') ||
+          consumeError.message.includes('recv parameters') ||
+          consumeError.message.includes('ERROR_CONTENT') ||
+          consumeError.message.includes('m-section')
+        )) {
+          console.error('SDP negotiation error during consume:', consumeError);
+          console.error('This usually indicates a codec mismatch or RTP capabilities incompatibility');
+          console.error('RTP Parameters received:', JSON.stringify(rtpParameters, null, 2));
+          console.error('Device RTP Capabilities:', JSON.stringify(this.device.rtpCapabilities, null, 2));
+
+          // Try to identify the problematic codec
+          if (rtpParameters.codecs) {
+            console.error('Codecs in RTP parameters:',
+              rtpParameters.codecs.map(c => ({
+                mimeType: c.mimeType,
+                clockRate: c.clockRate,
+                channels: c.channels,
+                payloadType: c.payloadType
+              }))
+            );
+          }
+
+          return null;
         }
-      });
+        // Re-throw other errors
+        throw consumeError;
+      }
 
       const stream = new MediaStream();
       stream.addTrack(consumer.track);
