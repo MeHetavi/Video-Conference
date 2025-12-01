@@ -1109,10 +1109,21 @@ class RoomClient {
       const hasAudio = this.hasProducer(participant.socketId, mediaType.audio);
       const hasVideo = this.hasProducer(participant.socketId, mediaType.video);
       const isCurrentUser = participant.socketId === this.socket.id;
+      const isMuted = this.mutedParticipants.get(participant.socketId) || false;
 
       const participantItem = document.createElement('div');
       participantItem.className = 'participant-item';
       participantItem.dataset.peerId = participant.socketId;
+
+      // Determine audio icon and class based on mute state
+      let audioIconClass = 'fa-microphone';
+      let audioStatusClass = hasAudio ? 'active' : 'inactive';
+      if (isMuted && hasAudio) {
+        audioIconClass = 'fa-microphone-slash';
+        audioStatusClass = 'muted-by-trainer';
+      } else if (!hasAudio) {
+        audioIconClass = 'fa-microphone-slash';
+      }
 
       let participantHTML = `
         <div class="participant-info">
@@ -1120,12 +1131,13 @@ class RoomClient {
             ${participant.name}
             ${isCurrentUser ? '<span class="you-indicator">You</span>' : ''}
             ${participant.isTrainer ? '<span class="trainer-indicator">Trainer</span>' : ''}
+            ${isMuted ? '<span class="muted-indicator" title="Audio muted by trainer"><i class="fas fa-microphone-slash"></i></span>' : ''}
           </div>
           <div class="participant-status">
-            <span class="status-icon ${hasAudio ? 'active' : 'inactive'}">
-              <i class="fas ${hasAudio ? 'fa-microphone' : 'fa-microphone-slash'}"></i>
+            <span class="status-icon ${audioStatusClass}" title="${isMuted ? 'Muted by trainer' : (hasAudio ? 'Audio on' : 'Audio off')}">
+              <i class="fas ${audioIconClass}"></i>
             </span>
-            <span class="status-icon ${hasVideo ? 'active' : 'inactive'}">
+            <span class="status-icon ${hasVideo ? 'active' : 'inactive'}" title="${hasVideo ? 'Video on' : 'Video off'}">
               <i class="fas ${hasVideo ? 'fa-video' : 'fa-video-slash'}"></i>
             </span>
           </div>
@@ -1240,7 +1252,7 @@ class RoomClient {
         nameSpan.className = 'video-name';
         nameSpan.textContent = participant.name;
         videoInfo.appendChild(nameSpan);
-        
+
         // Add mute indicator if participant is muted
         const isMuted = this.mutedParticipants.get(participant.socketId) || false;
         if (isMuted) {
@@ -1250,7 +1262,7 @@ class RoomClient {
           muteIndicator.setAttribute('title', 'Audio muted by trainer');
           videoInfo.appendChild(muteIndicator);
         }
-        
+
         if (participant.isTrainer) {
           const trainerBadge = document.createElement('span');
           trainerBadge.className = 'video-trainer-badge';
@@ -1330,7 +1342,7 @@ class RoomClient {
 
           // Update video info content
           const isMuted = this.mutedParticipants.get(participant.socketId) || false;
-          const muteIndicatorHTML = isMuted 
+          const muteIndicatorHTML = isMuted
             ? '<span class="video-mute-indicator" title="Audio muted by trainer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg></span>'
             : '';
           videoInfo.innerHTML = `
@@ -1819,7 +1831,7 @@ class RoomClient {
     this.socket.on('participantAudioMuted', (data) => {
       this.mutedParticipants.set(data.peerId, true);
       this.updateMuteButtonsForParticipant(data.peerId, true);
-      
+
       // If this is the local user being muted, update UI
       if (data.peerId === this.socket.id) {
         this.updateLocalAudioMutedState(true);
@@ -1830,12 +1842,15 @@ class RoomClient {
         // Update visual indicator for remote participant
         this.updateParticipantMuteIndicator(data.peerId, true);
       }
+
+      // Update participants list to reflect mute state
+      this.updateParticipantsList();
     });
 
     this.socket.on('participantAudioUnmuted', (data) => {
       this.mutedParticipants.set(data.peerId, false);
       this.updateMuteButtonsForParticipant(data.peerId, false);
-      
+
       // If this is the local user being unmuted, update UI
       if (data.peerId === this.socket.id) {
         this.updateLocalAudioMutedState(false);
@@ -1846,6 +1861,9 @@ class RoomClient {
         // Update visual indicator for remote participant
         this.updateParticipantMuteIndicator(data.peerId, false);
       }
+
+      // Update participants list to reflect unmute state
+      this.updateParticipantsList();
     });
   }
 
@@ -2152,7 +2170,7 @@ class RoomClient {
 
         // Update video info content
         const isMuted = this.mutedParticipants.get(appData.producerSocketId) || false;
-        const muteIndicatorHTML = isMuted 
+        const muteIndicatorHTML = isMuted
           ? '<span class="video-mute-indicator" title="Audio muted by trainer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg></span>'
           : '';
         videoInfo.innerHTML = `
@@ -3672,14 +3690,14 @@ class RoomClient {
       const videoInfo = container.querySelector('.video-info');
       if (videoInfo) {
         let muteIndicator = videoInfo.querySelector('.video-mute-indicator');
-        
+
         if (isMuted && !muteIndicator) {
           // Add mute indicator
           muteIndicator = document.createElement('span');
           muteIndicator.className = 'video-mute-indicator';
           muteIndicator.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg>';
           muteIndicator.setAttribute('title', 'Audio muted by trainer');
-          
+
           // Insert after video name, before trainer badge
           const videoName = videoInfo.querySelector('.video-name');
           if (videoName && videoName.nextSibling) {
@@ -3699,7 +3717,7 @@ class RoomClient {
   updateLocalAudioMutedState(isMuted) {
     const startAudioButton = document.getElementById('startAudioButton');
     const stopAudioButton = document.getElementById('stopAudioButton');
-    
+
     if (isMuted) {
       // Show muted state - disable the stop button and show muted icon
       if (stopAudioButton) {
