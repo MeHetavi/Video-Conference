@@ -767,6 +767,7 @@ class RoomClient {
     this.pinnedVideos = new Map();
     // Track muted participants (socketId -> boolean)
     this.mutedParticipants = new Map();
+    this.lastMuteNotification = new Map(); // Track last mute notification time to prevent duplicates
     this.name = name
     this.localMediaEl = localMediaEl
     this.remoteVideoEl = remoteVideoEl
@@ -1903,6 +1904,23 @@ class RoomClient {
 
     // Listen for participant audio mute/unmute events
     this.socket.on('participantAudioMuted', (data) => {
+      // Prevent duplicate notifications - check if we already processed this mute
+      const notificationKey = `mute-${data.peerId}`;
+      const lastNotification = this.lastMuteNotification.get(notificationKey);
+      const now = Date.now();
+
+      // Only process if this is a new mute event (not within 2 seconds of last notification)
+      if (lastNotification && (now - lastNotification) < 2000) {
+        return; // Skip duplicate notification
+      }
+
+      this.lastMuteNotification.set(notificationKey, now);
+
+      // Skip if already muted (prevent duplicate state updates)
+      if (this.mutedParticipants.get(data.peerId) === true) {
+        return;
+      }
+
       this.mutedParticipants.set(data.peerId, true);
       this.updateMuteButtonsForParticipant(data.peerId, true);
 
@@ -1922,6 +1940,23 @@ class RoomClient {
     });
 
     this.socket.on('participantAudioUnmuted', (data) => {
+      // Prevent duplicate notifications - check if we already processed this unmute
+      const notificationKey = `unmute-${data.peerId}`;
+      const lastNotification = this.lastMuteNotification.get(notificationKey);
+      const now = Date.now();
+
+      // Only process if this is a new unmute event (not within 2 seconds of last notification)
+      if (lastNotification && (now - lastNotification) < 2000) {
+        return; // Skip duplicate notification
+      }
+
+      this.lastMuteNotification.set(notificationKey, now);
+
+      // Skip if already unmuted (prevent duplicate state updates)
+      if (this.mutedParticipants.get(data.peerId) === false) {
+        return;
+      }
+
       this.mutedParticipants.set(data.peerId, false);
       this.updateMuteButtonsForParticipant(data.peerId, false);
 
