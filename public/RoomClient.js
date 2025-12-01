@@ -18,40 +18,15 @@ function updateLayout() {
   const remoteContainer = document.getElementById('remoteVideos');
   if (!remoteContainer) return;
 
-  const localVideoContainer = document.getElementById('localMedia');
-  const localVideoTile = localVideoContainer ? localVideoContainer.querySelector('.video-container') : null;
+  // Get all tiles including local video (all are now in remoteVideos container)
   const allTiles = Array.from(remoteContainer.querySelectorAll('.video-container'));
 
-  // Filter out local video tile from remote tiles (check for "You" indicator)
-  const remoteTiles = allTiles.filter(tile => {
-    const overlay = tile.querySelector('.video-overlay');
-    if (!overlay) return true;
-    const nameElement = overlay.querySelector('.video-name');
-    if (!nameElement) return true;
-    // Check if it's the local video by looking for "You" indicator
-    const youIndicator = overlay.querySelector('.you-indicator');
-    return !youIndicator && !nameElement.textContent.includes('(You)');
-  });
+  // Include all tiles (local + remote) in the grid layout
+  const allParticipantTiles = allTiles;
 
-  // Separate pinned and unpinned videos
-  const pinnedTiles = remoteTiles.filter(tile => tile.classList.contains('pinned'));
-  const unpinnedTiles = remoteTiles.filter(tile => !tile.classList.contains('pinned'));
-
-  // Ensure local video stays in localMedia container (don't move it to remote container)
-  if (localVideoTile && localVideoContainer && localVideoTile.parentElement !== localVideoContainer) {
-    localVideoContainer.appendChild(localVideoTile);
-  }
-
-  // Style local video as small overlay in bottom-right (Google Meet style)
-  if (localVideoTile) {
-    localVideoTile.style.width = '100%';
-    localVideoTile.style.height = '100%';
-    localVideoTile.style.aspectRatio = '16/9';
-    localVideoTile.style.borderRadius = '12px';
-    localVideoTile.style.overflow = 'hidden';
-    localVideoTile.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
-    localVideoTile.style.position = 'relative';
-  }
+  // Separate pinned and unpinned videos (including local video)
+  const pinnedTiles = allParticipantTiles.filter(tile => tile.classList.contains('pinned'));
+  const unpinnedTiles = allParticipantTiles.filter(tile => !tile.classList.contains('pinned'));
 
   // Get screen width for responsive layout
   const screenWidth = window.innerWidth;
@@ -59,10 +34,10 @@ function updateLayout() {
   const isTablet = screenWidth > 640 && screenWidth <= 768;
   const isSmallDesktop = screenWidth > 768 && screenWidth <= 1024;
 
-  // Calculate grid layout based on number of remote participants (Google Meet style)
+  // Calculate grid layout based on number of participants (including local video)
   // Optimize to minimize empty spaces
   // If there are pinned videos, show them prominently at the top
-  const participantCount = remoteTiles.length;
+  const participantCount = allParticipantTiles.length;
   const pinnedCount = pinnedTiles.length;
   const unpinnedCount = unpinnedTiles.length;
   let gridColumns = 1;
@@ -192,25 +167,25 @@ function updateLayout() {
 
   // Apply grid layout
   if (participantCount > 0) {
-    // For small screens with more than 4 videos, automatically pin first video and show others horizontally
-    // Or if there are already pinned videos, use the pinned layout
-    if ((isMobile && participantCount > 4 && pinnedCount === 0) || pinnedCount > 0) {
-      // Auto-pin first video on mobile if more than 4 videos and no pinned videos
-      if (isMobile && participantCount > 4 && pinnedCount === 0) {
-        // Automatically pin the first video
-        if (remoteTiles.length > 0 && !remoteTiles[0].classList.contains('pinned')) {
-          remoteTiles[0].classList.add('pinned');
-          // Update pinned/unpinned arrays
-          pinnedTiles.push(remoteTiles[0]);
-          const index = unpinnedTiles.indexOf(remoteTiles[0]);
-          if (index > -1) {
-            unpinnedTiles.splice(index, 1);
+      // For small screens with more than 4 videos, automatically pin first video and show others horizontally
+      // Or if there are already pinned videos, use the pinned layout
+      if ((isMobile && participantCount > 4 && pinnedCount === 0) || pinnedCount > 0) {
+        // Auto-pin first video on mobile if more than 4 videos and no pinned videos
+        if (isMobile && participantCount > 4 && pinnedCount === 0) {
+          // Automatically pin the first video
+          if (allParticipantTiles.length > 0 && !allParticipantTiles[0].classList.contains('pinned')) {
+            allParticipantTiles[0].classList.add('pinned');
+            // Update pinned/unpinned arrays
+            pinnedTiles.push(allParticipantTiles[0]);
+            const index = unpinnedTiles.indexOf(allParticipantTiles[0]);
+            if (index > -1) {
+              unpinnedTiles.splice(index, 1);
+            }
+            // Update counts
+            pinnedCount = pinnedTiles.length;
+            unpinnedCount = unpinnedTiles.length;
           }
-          // Update counts
-          pinnedCount = pinnedTiles.length;
-          unpinnedCount = unpinnedTiles.length;
         }
-      }
       // Create two-column layout: pinned video(s) on left, others in scrollable sidebar on right
       // On mobile, stack vertically instead of horizontally
       remoteContainer.style.display = 'flex';
@@ -251,7 +226,7 @@ function updateLayout() {
       }
 
       // Reset all tiles first to clear any previous layout styles
-      remoteTiles.forEach(tile => {
+      allParticipantTiles.forEach(tile => {
         tile.style.gridArea = '';
         tile.style.flex = '';
         tile.style.width = '';
@@ -446,19 +421,12 @@ function updateLayout() {
         pinnedArea.remove();
       }
 
-      // Recalculate remoteTiles after moving (to include all tiles now in main container)
+      // Get all tiles after moving (including local video)
       const allTilesAfterMove = Array.from(remoteContainer.querySelectorAll('.video-container'));
-      const remoteTilesAfterMove = allTilesAfterMove.filter(tile => {
-        const overlay = tile.querySelector('.video-overlay');
-        if (!overlay) return true;
-        const nameElement = overlay.querySelector('.video-name');
-        if (!nameElement) return true;
-        const youIndicator = overlay.querySelector('.you-indicator');
-        return !youIndicator && !nameElement.textContent.includes('(You)');
-      });
+      const allParticipantTilesAfterMove = allTilesAfterMove;
 
       // Recalculate grid layout parameters based on actual tile count after moving
-      const actualParticipantCount = remoteTilesAfterMove.length;
+      const actualParticipantCount = allParticipantTilesAfterMove.length;
       let actualGridColumns = 1;
       let actualGridRows = 1;
       let actualUseCustomLayout = false;
@@ -540,7 +508,7 @@ function updateLayout() {
       }
 
       // Reset all tile styles before applying grid layout
-      remoteTilesAfterMove.forEach(tile => {
+      allParticipantTilesAfterMove.forEach(tile => {
         tile.style.gridArea = '';
         tile.style.flex = '';
         tile.style.width = '';
@@ -568,22 +536,22 @@ function updateLayout() {
       remoteContainer.style.overflowY = actualParticipantCount > 16 ? 'auto' : 'hidden';
 
       // Apply custom layout for 3 participants
-      if (actualUseCustomLayout && remoteTilesAfterMove.length === 3) {
+      if (actualUseCustomLayout && allParticipantTilesAfterMove.length === 3) {
         if (isMobile) {
           // Mobile: 2 in first row, 1 in second row
-          remoteTilesAfterMove[0].style.gridArea = '1 / 1 / 2 / 2'; // Top-left
-          remoteTilesAfterMove[1].style.gridArea = '1 / 2 / 2 / 3'; // Top-right
-          remoteTilesAfterMove[2].style.gridArea = '2 / 1 / 3 / 3'; // Bottom row, spans both columns
+          allParticipantTilesAfterMove[0].style.gridArea = '1 / 1 / 2 / 2'; // Top-left
+          allParticipantTilesAfterMove[1].style.gridArea = '1 / 2 / 2 / 3'; // Top-right
+          allParticipantTilesAfterMove[2].style.gridArea = '2 / 1 / 3 / 3'; // Bottom row, spans both columns
         } else {
           // Desktop: First two videos in left column (stacked), third video takes entire right column
-          remoteTilesAfterMove[0].style.gridArea = '1 / 1 / 2 / 2'; // Top-left
-          remoteTilesAfterMove[1].style.gridArea = '2 / 1 / 3 / 2'; // Bottom-left
-          remoteTilesAfterMove[2].style.gridArea = '1 / 2 / 3 / 3'; // Full right column
+          allParticipantTilesAfterMove[0].style.gridArea = '1 / 1 / 2 / 2'; // Top-left
+          allParticipantTilesAfterMove[1].style.gridArea = '2 / 1 / 3 / 2'; // Bottom-left
+          allParticipantTilesAfterMove[2].style.gridArea = '1 / 2 / 3 / 3'; // Full right column
         }
       }
 
       // Apply default grid styles to all tiles
-      remoteTilesAfterMove.forEach((tile, index) => {
+      allParticipantTilesAfterMove.forEach((tile, index) => {
         tile.style.width = '100%';
         tile.style.height = '100%';
         tile.style.minHeight = '0';
@@ -592,23 +560,23 @@ function updateLayout() {
 
         // For 3-video layout on mobile, the bottom video spans 2 columns
         // Remove aspect ratio constraint to let it fill the grid cell properly
-        if (actualUseCustomLayout && remoteTilesAfterMove.length === 3 && isMobile && index === 2) {
+        if (actualUseCustomLayout && allParticipantTilesAfterMove.length === 3 && isMobile && index === 2) {
           // Bottom video: let grid cell determine size, video will use object-fit: contain
           tile.style.aspectRatio = '';
         } else {
           tile.style.aspectRatio = '16/9';
         }
 
-        if (!actualUseCustomLayout || remoteTilesAfterMove.length !== 3) {
+        if (!actualUseCustomLayout || allParticipantTilesAfterMove.length !== 3) {
           tile.style.gridArea = '';
         }
       });
     }
   }
 
-  // Style each remote video tile with base styles
+  // Style each video tile with base styles (including local video)
   // Layout-specific styles (width, height, aspectRatio) are set in the pinned/unpinned sections above
-  remoteTiles.forEach(tile => {
+  allParticipantTiles.forEach(tile => {
     // Always apply base styles
     tile.style.borderRadius = '12px';
     tile.style.overflow = 'hidden';
@@ -625,13 +593,6 @@ function updateLayout() {
   const videoMedia = document.getElementById('videoMedia');
   if (videoMedia) {
     videoMedia.style.height = `calc(100vh - ${controlHeight}px)`;
-  }
-
-  // Update local video container position for mobile
-  const localVideoContainerElement = document.getElementById('localVideoContainer');
-  if (localVideoContainerElement && isMobile) {
-    // Ensure local video doesn't overlap with controls on mobile
-    localVideoContainerElement.style.bottom = `${controlHeight + 8}px`;
   }
 }
 
@@ -760,13 +721,8 @@ function setupNonTrainerLayout(container, tiles) {
 }
 
 function setupStandardLayout(container, tiles) {
-  const localVideo = document.getElementById('localMedia');
-  const localVideoContainer = localVideo.querySelector('.video-container');
-  const remoteTiles = Array.from(container.querySelectorAll('.video-container'));
-
-  if (localVideoContainer && localVideoContainer.parentElement !== container) {
-    container.appendChild(localVideoContainer);
-  }
+  // All tiles (including local video) are now in the container
+  // No need to separately handle local video
 
   tiles.forEach(tile => {
     tile.style.gridArea = '';
@@ -1038,8 +994,8 @@ class RoomClient {
           container.appendChild(video);
           container.appendChild(overlay);
 
-          // Add the container to the local media container
-          document.getElementById('localMedia').appendChild(container);
+          // Add the container to the remote videos container (render with remote tiles)
+          document.getElementById('remoteVideos').appendChild(container);
 
           try {
             const data = await this.socket.request('getRouterRtpCapabilities');
@@ -2399,10 +2355,7 @@ class RoomClient {
         remoteVideosContainer.innerHTML = '';
       }
 
-      const localMediaContainer = document.getElementById('localMedia');
-      if (localMediaContainer) {
-        localMediaContainer.innerHTML = '';
-      }
+      // Local video is now in remoteVideos container, so no need to clear separately
 
       // Clear audio elements
       const remoteAudioContainer = document.getElementById('remoteAudio');
