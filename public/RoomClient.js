@@ -61,7 +61,7 @@ function updateLayout() {
   const maxColumns = getMaxColumns();
 
   if (participantCount === 0) {
-    // No remote participants - show empty grid, local video will be in overlay
+    // No participants yet - show empty grid (local video will be added when it's ready)
     gridColumns = 1;
     gridRows = 1;
     remoteContainer.style.display = 'grid';
@@ -76,6 +76,16 @@ function updateLayout() {
   } else if (participantCount === 1) {
     gridColumns = 1;
     gridRows = 1;
+    // Apply grid for single participant (local video)
+    remoteContainer.style.display = 'grid';
+    remoteContainer.style.gridTemplateColumns = '1fr';
+    remoteContainer.style.gridTemplateRows = '1fr';
+    remoteContainer.style.gap = isMobile ? '4px' : '8px';
+    remoteContainer.style.padding = isMobile ? '4px' : '8px';
+    remoteContainer.style.width = '100%';
+    remoteContainer.style.height = '100%';
+    remoteContainer.style.minHeight = '0';
+    remoteContainer.style.overflow = 'hidden';
   } else if (participantCount === 2) {
     // Small screens: 1 column, 2 rows (one per row)
     if (isMobile) {
@@ -578,6 +588,8 @@ function updateLayout() {
     tile.style.overflow = 'hidden';
     tile.style.position = 'relative';
     tile.style.backgroundColor = '#1B4332';
+    tile.style.display = 'flex'; // Ensure tile is visible
+    tile.style.visibility = 'visible'; // Ensure tile is visible
 
     // Layout-specific styles are already set in the pinned/unpinned sections above
     // Don't override them here
