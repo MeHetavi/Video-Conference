@@ -1240,7 +1240,17 @@ class RoomClient {
         nameSpan.className = 'video-name';
         nameSpan.textContent = participant.name;
         videoInfo.appendChild(nameSpan);
-
+        
+        // Add mute indicator if participant is muted
+        const isMuted = this.mutedParticipants.get(participant.socketId) || false;
+        if (isMuted) {
+          const muteIndicator = document.createElement('span');
+          muteIndicator.className = 'video-mute-indicator';
+          muteIndicator.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg>';
+          muteIndicator.setAttribute('title', 'Audio muted by trainer');
+          videoInfo.appendChild(muteIndicator);
+        }
+        
         if (participant.isTrainer) {
           const trainerBadge = document.createElement('span');
           trainerBadge.className = 'video-trainer-badge';
@@ -1319,8 +1329,13 @@ class RoomClient {
           }
 
           // Update video info content
+          const isMuted = this.mutedParticipants.get(participant.socketId) || false;
+          const muteIndicatorHTML = isMuted 
+            ? '<span class="video-mute-indicator" title="Audio muted by trainer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg></span>'
+            : '';
           videoInfo.innerHTML = `
             <span class="video-name">${participant.name}</span>
+            ${muteIndicatorHTML}
             ${participant.isTrainer ? '<span class="video-trainer-badge">Trainer</span>' : ''}
           `;
 
@@ -1804,11 +1819,33 @@ class RoomClient {
     this.socket.on('participantAudioMuted', (data) => {
       this.mutedParticipants.set(data.peerId, true);
       this.updateMuteButtonsForParticipant(data.peerId, true);
+      
+      // If this is the local user being muted, update UI
+      if (data.peerId === this.socket.id) {
+        this.updateLocalAudioMutedState(true);
+        if (typeof showWarningNotification === 'function') {
+          showWarningNotification('Your microphone has been muted by the trainer', 'Microphone Muted');
+        }
+      } else {
+        // Update visual indicator for remote participant
+        this.updateParticipantMuteIndicator(data.peerId, true);
+      }
     });
 
     this.socket.on('participantAudioUnmuted', (data) => {
       this.mutedParticipants.set(data.peerId, false);
       this.updateMuteButtonsForParticipant(data.peerId, false);
+      
+      // If this is the local user being unmuted, update UI
+      if (data.peerId === this.socket.id) {
+        this.updateLocalAudioMutedState(false);
+        if (typeof showSuccessNotification === 'function') {
+          showSuccessNotification('Your microphone has been unmuted by the trainer', 'Microphone Unmuted');
+        }
+      } else {
+        // Update visual indicator for remote participant
+        this.updateParticipantMuteIndicator(data.peerId, false);
+      }
     });
   }
 
@@ -2114,8 +2151,13 @@ class RoomClient {
         }
 
         // Update video info content
+        const isMuted = this.mutedParticipants.get(appData.producerSocketId) || false;
+        const muteIndicatorHTML = isMuted 
+          ? '<span class="video-mute-indicator" title="Audio muted by trainer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg></span>'
+          : '';
         videoInfo.innerHTML = `
           <span class="video-name">${participantName}</span>
+          ${muteIndicatorHTML}
           ${isTrainer ? '<span class="video-trainer-badge">Trainer</span>' : ''}
         `;
 
@@ -2506,6 +2548,17 @@ class RoomClient {
   closeProducer(type) {
     if (!this.producerLabel.has(type)) {
       return
+    }
+
+    // Prevent unmuting audio if muted by trainer
+    if (type === mediaType.audio) {
+      const isMutedByTrainer = this.mutedParticipants.get(this.socket.id) || false;
+      if (isMutedByTrainer) {
+        if (typeof showWarningNotification === 'function') {
+          showWarningNotification('Your microphone has been muted by the trainer. You cannot unmute yourself.', 'Microphone Muted');
+        }
+        return;
+      }
     }
 
     let producer_id = this.producerLabel.get(type)
@@ -3610,6 +3663,82 @@ class RoomClient {
         this.updateMuteButton(muteButton, isMuted);
       }
     });
+  }
+
+  // Update mute indicator in video overlay for a participant
+  updateParticipantMuteIndicator(socketId, isMuted) {
+    const containers = Array.from(document.querySelectorAll(`[data-socket-id="${socketId}"]`));
+    containers.forEach(container => {
+      const videoInfo = container.querySelector('.video-info');
+      if (videoInfo) {
+        let muteIndicator = videoInfo.querySelector('.video-mute-indicator');
+        
+        if (isMuted && !muteIndicator) {
+          // Add mute indicator
+          muteIndicator = document.createElement('span');
+          muteIndicator.className = 'video-mute-indicator';
+          muteIndicator.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg>';
+          muteIndicator.setAttribute('title', 'Audio muted by trainer');
+          
+          // Insert after video name, before trainer badge
+          const videoName = videoInfo.querySelector('.video-name');
+          if (videoName && videoName.nextSibling) {
+            videoInfo.insertBefore(muteIndicator, videoName.nextSibling);
+          } else {
+            videoInfo.appendChild(muteIndicator);
+          }
+        } else if (!isMuted && muteIndicator) {
+          // Remove mute indicator
+          muteIndicator.remove();
+        }
+      }
+    });
+  }
+
+  // Update local audio button state when muted by trainer
+  updateLocalAudioMutedState(isMuted) {
+    const startAudioButton = document.getElementById('startAudioButton');
+    const stopAudioButton = document.getElementById('stopAudioButton');
+    
+    if (isMuted) {
+      // Show muted state - disable the stop button and show muted icon
+      if (stopAudioButton) {
+        stopAudioButton.classList.add('muted-by-trainer');
+        stopAudioButton.style.cursor = 'not-allowed';
+        stopAudioButton.style.opacity = '0.7';
+        // Update icon to show muted state (red microphone with slash)
+        const svg = stopAudioButton.querySelector('svg');
+        if (svg) {
+          svg.setAttribute('fill', '#ef4444');
+          svg.innerHTML = '<path d="m710-362-58-58q14-23 21-48t7-52h80q0 44-13 83.5T710-362ZM480-594Zm112 112-72-72v-206q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760v126l-80-80v-46q0-50 35-85t85-35q50 0 85 35t35 85v240q0 11-2.5 20t-5.5 18ZM440-120v-123q-104-14-172-93t-68-184h80q0 83 57.5 141.5T480-320q34 0 64.5-10.5T600-360l57 57q-29 23-63.5 39T520-243v123h-80Zm352 64L56-792l56-56 736 736-56 56Z"/>';
+        }
+        // Prevent clicking to unmute when muted by trainer
+        stopAudioButton.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof showWarningNotification === 'function') {
+            showWarningNotification('Your microphone has been muted by the trainer. You cannot unmute yourself.', 'Microphone Muted');
+          }
+        };
+      }
+    } else {
+      // Restore normal state
+      if (stopAudioButton) {
+        stopAudioButton.classList.remove('muted-by-trainer');
+        stopAudioButton.style.cursor = '';
+        stopAudioButton.style.opacity = '';
+        // Restore normal icon
+        const svg = stopAudioButton.querySelector('svg');
+        if (svg) {
+          svg.setAttribute('fill', '#e3e3e3');
+          svg.innerHTML = '<path d="M480-400q-50 0-85-35t-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35Zm0-240Zm-40 520v-123q-104-14-172-93t-68-184h80q0 83 58.5 141.5T480-320q83 0 141.5-58.5T680-520h80q0 105-68 184t-172 93v123h-80Zm40-360q17 0 28.5-11.5T520-520v-240q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760v240q0 17 11.5 28.5T480-480Z"/>';
+        }
+        // Restore normal onclick handler
+        stopAudioButton.onclick = () => {
+          rc.closeProducer(RoomClient.mediaType.audio);
+        };
+      }
+    }
   }
 
   initPoseComparison() {
