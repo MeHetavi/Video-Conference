@@ -167,25 +167,25 @@ function updateLayout() {
 
   // Apply grid layout
   if (participantCount > 0) {
-      // For small screens with more than 4 videos, automatically pin first video and show others horizontally
-      // Or if there are already pinned videos, use the pinned layout
-      if ((isMobile && participantCount > 4 && pinnedCount === 0) || pinnedCount > 0) {
-        // Auto-pin first video on mobile if more than 4 videos and no pinned videos
-        if (isMobile && participantCount > 4 && pinnedCount === 0) {
-          // Automatically pin the first video
-          if (allParticipantTiles.length > 0 && !allParticipantTiles[0].classList.contains('pinned')) {
-            allParticipantTiles[0].classList.add('pinned');
-            // Update pinned/unpinned arrays
-            pinnedTiles.push(allParticipantTiles[0]);
-            const index = unpinnedTiles.indexOf(allParticipantTiles[0]);
-            if (index > -1) {
-              unpinnedTiles.splice(index, 1);
-            }
-            // Update counts
-            pinnedCount = pinnedTiles.length;
-            unpinnedCount = unpinnedTiles.length;
+    // For small screens with more than 4 videos, automatically pin first video and show others horizontally
+    // Or if there are already pinned videos, use the pinned layout
+    if ((isMobile && participantCount > 4 && pinnedCount === 0) || pinnedCount > 0) {
+      // Auto-pin first video on mobile if more than 4 videos and no pinned videos
+      if (isMobile && participantCount > 4 && pinnedCount === 0) {
+        // Automatically pin the first video
+        if (allParticipantTiles.length > 0 && !allParticipantTiles[0].classList.contains('pinned')) {
+          allParticipantTiles[0].classList.add('pinned');
+          // Update pinned/unpinned arrays
+          pinnedTiles.push(allParticipantTiles[0]);
+          const index = unpinnedTiles.indexOf(allParticipantTiles[0]);
+          if (index > -1) {
+            unpinnedTiles.splice(index, 1);
           }
+          // Update counts
+          pinnedCount = pinnedTiles.length;
+          unpinnedCount = unpinnedTiles.length;
         }
+      }
       // Create two-column layout: pinned video(s) on left, others in scrollable sidebar on right
       // On mobile, stack vertically instead of horizontally
       remoteContainer.style.display = 'flex';
