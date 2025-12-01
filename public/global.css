@@ -542,14 +542,17 @@ body {
         -moz-appearance: none;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
-        background-position: right 6px center;
+        background-position: center;
         background-size: 12px;
-        padding-right: 24px;
+        color: transparent;
+        text-indent: -9999px;
+        overflow: hidden;
     }
 
     .control-device-dropdown option {
         background-color: #1B4332;
         color: white;
+        text-indent: 0;
     }
 
     .control-device-dropdown:focus {
@@ -565,14 +568,17 @@ body {
         -moz-appearance: none;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
-        background-position: right 6px center;
+        background-position: center;
         background-size: 12px;
-        padding-right: 24px;
+        color: transparent;
+        text-indent: -9999px;
+        overflow: hidden;
     }
 
     .lobby-device-dropdown option {
         background-color: #1B4332;
         color: white;
+        text-indent: 0;
     }
 
     .lobby-device-dropdown:focus {
@@ -597,16 +603,14 @@ body {
 
     /* Device dropdowns - smaller on mobile */
     .control-device-dropdown {
-        width: 80px !important;
-        font-size: 10px !important;
-        padding: 4px 20px 4px 6px !important;
+        width: 32px !important;
+        height: 32px !important;
     }
 
     /* Lobby dropdowns - smaller on mobile */
     .lobby-device-dropdown {
-        width: 70px !important;
-        font-size: 10px !important;
-        padding: 4px 20px 4px 6px !important;
+        width: 32px !important;
+        height: 32px !important;
     }
 
     /* Video grid layout is handled by JavaScript based on participant count */
@@ -757,16 +761,14 @@ body {
 
     /* Device dropdowns - even smaller on very small screens */
     .control-device-dropdown {
-        width: 70px !important;
-        font-size: 9px !important;
-        padding: 3px 18px 3px 5px !important;
+        width: 28px !important;
+        height: 28px !important;
     }
 
     /* Lobby dropdowns - even smaller on very small screens */
     .lobby-device-dropdown {
-        width: 60px !important;
-        font-size: 9px !important;
-        padding: 3px 18px 3px 5px !important;
+        width: 28px !important;
+        height: 28px !important;
     }
 }
 

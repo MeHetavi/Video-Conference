@@ -402,7 +402,8 @@
                                         <i class="fa-solid fa-microphone text-sm sm:text-base"></i>
                                     </button>
                                     <select id="lobbyMicDropdown"
-                                        class="lobby-device-dropdown w-20 sm:w-24 h-8 sm:h-9 px-2 rounded-lg bg-[#1B4332]/80 hover:bg-[#1B4332] border border-[#52B788]/40 text-white text-xs sm:text-sm backdrop-blur transition-all duration-200 cursor-pointer">
+                                        class="lobby-device-dropdown w-8 sm:w-9 h-8 sm:h-9 px-0 rounded-lg bg-[#1B4332]/80 hover:bg-[#1B4332] border border-[#52B788]/40 text-white backdrop-blur transition-all duration-200 cursor-pointer"
+                                        title="Select microphone">
                                         <option value="">Select mic</option>
                                     </select>
                                 </div>
@@ -413,7 +414,8 @@
                                         <i class="fa-solid fa-video text-sm sm:text-base"></i>
                                     </button>
                                     <select id="lobbyCamDropdown"
-                                        class="lobby-device-dropdown w-20 sm:w-24 h-8 sm:h-9 px-2 rounded-lg bg-[#1B4332]/80 hover:bg-[#1B4332] border border-[#52B788]/40 text-white text-xs sm:text-sm backdrop-blur transition-all duration-200 cursor-pointer">
+                                        class="lobby-device-dropdown w-8 sm:w-9 h-8 sm:h-9 px-0 rounded-lg bg-[#1B4332]/80 hover:bg-[#1B4332] border border-[#52B788]/40 text-white backdrop-blur transition-all duration-200 cursor-pointer"
+                                        title="Select camera">
                                         <option value="">Select camera</option>
                                     </select>
                                 </div>
@@ -528,8 +530,8 @@
                             </svg>
                         </button>
                         <select id="audioDeviceDropdown"
-                            class="control-device-dropdown hidden w-24 md:w-28 h-8 md:h-9 px-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs md:text-sm backdrop-blur transition-all duration-200 cursor-pointer"
-                            onchange="handleAudioDeviceChange(this.value)">
+                            class="control-device-dropdown hidden w-8 md:w-9 h-8 md:h-9 px-0 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur transition-all duration-200 cursor-pointer"
+                            onchange="handleAudioDeviceChange(this.value)" title="Select microphone">
                             <option value="">Select mic</option>
                         </select>
                     </div>
@@ -555,8 +557,8 @@
                             </svg>
                         </button>
                         <select id="videoDeviceDropdown"
-                            class="control-device-dropdown hidden w-24 md:w-28 h-8 md:h-9 px-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs md:text-sm backdrop-blur transition-all duration-200 cursor-pointer"
-                            onchange="handleVideoDeviceChange(this.value)">
+                            class="control-device-dropdown hidden w-8 md:w-9 h-8 md:h-9 px-0 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur transition-all duration-200 cursor-pointer"
+                            onchange="handleVideoDeviceChange(this.value)" title="Select camera">
                             <option value="">Select camera</option>
                         </select>
                     </div>
