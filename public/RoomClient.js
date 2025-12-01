@@ -1888,9 +1888,15 @@ class RoomClient {
         return;
       }
 
+      // Ensure consumer transport is ready
+      if (!this.consumerTransport) {
+        console.error('Consumer transport not initialized, cannot consume');
+        return;
+      }
+
       const consumeResult = await this.getConsumeStream(producer_id);
       if (!consumeResult) {
-        console.error('Failed to get consume stream');
+        console.error('Failed to get consume stream for producer:', producer_id);
         return;
       }
 
@@ -2136,6 +2142,24 @@ class RoomClient {
       return null;
     }
 
+    // Ensure consumer transport is initialized
+    if (!this.consumerTransport) {
+      console.error('Consumer transport not initialized yet');
+      return null;
+    }
+
+    // Check if transport is closed
+    try {
+      const transportState = this.consumerTransport.connectionState;
+      if (transportState === 'closed' || transportState === 'failed') {
+        console.error('Consumer transport is in invalid state:', transportState);
+        return null;
+      }
+    } catch (e) {
+      // connectionState might not be available, continue anyway
+      console.warn('Could not check transport state:', e);
+    }
+
     const { rtpCapabilities } = this.device;
 
     try {
@@ -2145,12 +2169,57 @@ class RoomClient {
         producerId
       });
 
+      if (!data || data.error) {
+        console.error('Error from consume request:', data?.error || 'Unknown error');
+        return null;
+      }
+
       const { id, kind, rtpParameters, producerSocketId } = data;
+
+      // Validate RTP parameters
+      if (!rtpParameters || !kind) {
+        console.error('Invalid consume response: missing rtpParameters or kind');
+        return null;
+      }
+
+      // Validate RTP parameters structure
+      if (!rtpParameters.codecs || !Array.isArray(rtpParameters.codecs) || rtpParameters.codecs.length === 0) {
+        console.error('Invalid RTP parameters: missing or empty codecs array');
+        return null;
+      }
 
       // Determine media type based on kind
       const mediaTypeValue = kind === 'audio' ? mediaType.audio : mediaType.video;
 
       let codecOptions = {};
+
+      // Ensure transport is connected before consuming
+      // Wait for transport to be ready (with timeout)
+      let retries = 0;
+      const maxRetries = 10;
+      while (retries < maxRetries) {
+        try {
+          const transportState = this.consumerTransport.connectionState;
+          if (transportState === 'connected') {
+            break; // Transport is ready
+          } else if (transportState === 'failed' || transportState === 'closed') {
+            throw new Error(`Consumer transport is ${transportState}`);
+          }
+          // Wait a bit before checking again
+          await new Promise(resolve => setTimeout(resolve, 100));
+          retries++;
+        } catch (e) {
+          // connectionState might not be available, try consuming anyway
+          if (e.message && e.message.includes('transport')) {
+            throw e;
+          }
+          break;
+        }
+      }
+
+      // Add a small delay to ensure transport is ready (helps with race conditions)
+      await new Promise(resolve => setTimeout(resolve, 50));
+
       const consumer = await this.consumerTransport.consume({
         id,
         producerId,
@@ -2178,6 +2247,22 @@ class RoomClient {
       };
     } catch (error) {
       console.error('Error getting consume stream:', error);
+      // Log more details about the error
+      if (error.message) {
+        if (error.message.includes('recv parameters') || error.message.includes('ERROR_CONTENT')) {
+          console.error('RTP capabilities mismatch or transport not ready.');
+          console.error('Device RTP capabilities:', JSON.stringify(this.device.rtpCapabilities, null, 2));
+          console.error('Consumer transport ID:', this.consumerTransport?.id);
+          console.error('Producer ID:', producerId);
+
+          // Try to get more info about the transport state
+          try {
+            console.error('Transport connection state:', this.consumerTransport?.connectionState);
+          } catch (e) {
+            // Ignore if connectionState is not accessible
+          }
+        }
+      }
       return null;
     }
   }
