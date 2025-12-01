@@ -394,31 +394,37 @@
                             </div>
                             <!-- Bottom controls -->
                             <div
-                                class="absolute inset-x-0 bottom-0 pb-4 sm:pb-6 pt-10 sm:pt-12 bg-gradient-to-t from-black/60 to-transparent flex items-center justify-center gap-3 sm:gap-4">
-                                <button id="lobbyMicToggle" type="button"
-                                    class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
-                                    <i class="fa-solid fa-microphone text-sm sm:text-base"></i>
-                                </button>
-                                <button id="lobbyCamToggle" type="button"
-                                    class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
-                                    <i class="fa-solid fa-video text-sm sm:text-base"></i>
-                                </button>
+                                class="absolute inset-x-0 bottom-0 pb-4 sm:pb-6 pt-10 sm:pt-12 bg-gradient-to-t from-black/60 to-transparent flex items-center justify-center gap-2 sm:gap-3">
+                                <!-- Mic controls with dropdown -->
+                                <div class="flex items-center gap-1">
+                                    <button id="lobbyMicToggle" type="button"
+                                        class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+                                        <i class="fa-solid fa-microphone text-sm sm:text-base"></i>
+                                    </button>
+                                    <select id="lobbyMicDropdown"
+                                        class="lobby-device-dropdown w-20 sm:w-24 h-8 sm:h-9 px-2 rounded-lg bg-[#1B4332]/80 hover:bg-[#1B4332] border border-[#52B788]/40 text-white text-xs sm:text-sm backdrop-blur transition-all duration-200 cursor-pointer">
+                                        <option value="">Select mic</option>
+                                    </select>
+                                </div>
+                                <!-- Video controls with dropdown -->
+                                <div class="flex items-center gap-1">
+                                    <button id="lobbyCamToggle" type="button"
+                                        class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+                                        <i class="fa-solid fa-video text-sm sm:text-base"></i>
+                                    </button>
+                                    <select id="lobbyCamDropdown"
+                                        class="lobby-device-dropdown w-20 sm:w-24 h-8 sm:h-9 px-2 rounded-lg bg-[#1B4332]/80 hover:bg-[#1B4332] border border-[#52B788]/40 text-white text-xs sm:text-sm backdrop-blur transition-all duration-200 cursor-pointer">
+                                        <option value="">Select camera</option>
+                                    </select>
+                                </div>
                             </div>
 
                         </div>
-                        <!-- Bottom device selectors -->
-                        <div class="mt-3 sm:mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 items-center">
-                            <select id="lobbyMicSelect"
-                                class="w-full h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-white/80 border border-white/40 text-[#3E2C1C] backdrop-blur min-w-0 text-sm sm:text-base truncate">
-                                <option>Loading microphones…</option>
-                            </select>
+                        <!-- Bottom device selectors (speaker only, mic and cam are now in controls) -->
+                        <div class="mt-3 sm:mt-4 flex justify-center">
                             <select id="lobbySpeakerSelect"
-                                class="w-full h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-white/80 border border-white/40 text-[#3E2C1C] backdrop-blur min-w-0 text-sm sm:text-base truncate">
+                                class="w-full max-w-xs h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-white/80 border border-white/40 text-[#3E2C1C] backdrop-blur min-w-0 text-sm sm:text-base truncate">
                                 <option>Loading speakers…</option>
-                            </select>
-                            <select id="lobbyCameraSelect"
-                                class="w-full h-9 sm:h-10 px-3 sm:px-4 rounded-full bg-white/80 border border-white/40 text-[#3E2C1C] backdrop-blur min-w-0 text-sm sm:text-base truncate">
-                                <option>Loading cameras…</option>
                             </select>
                         </div>
                     </div>
@@ -808,26 +814,29 @@
                 const speakers = devices.filter(d => d.kind === 'audiooutput');
                 const cams = devices.filter(d => d.kind === 'videoinput');
 
-                const micSel = document.getElementById('lobbyMicSelect');
+                const micDropdown = document.getElementById('lobbyMicDropdown');
                 const spkSel = document.getElementById('lobbySpeakerSelect');
-                const camSel = document.getElementById('lobbyCameraSelect');
+                const camDropdown = document.getElementById('lobbyCamDropdown');
 
-                if (micSel) {
-                    micSel.innerHTML = '';
+                // Populate mic dropdown (new location)
+                if (micDropdown) {
+                    micDropdown.innerHTML = '<option value="">Select mic</option>';
                     mics.forEach(d => {
                         const opt = document.createElement('option');
                         opt.value = d.deviceId;
                         opt.textContent = d.label || 'Microphone';
-                        micSel.appendChild(opt);
+                        micDropdown.appendChild(opt);
                     });
                     if (!lobbyAudioDeviceId && mics[0]) {
                         lobbyAudioDeviceId = mics[0].deviceId;
                         window.lobbyAudioDeviceId = lobbyAudioDeviceId;
                     }
-                    micSel.value = lobbyAudioDeviceId || '';
+                    micDropdown.value = lobbyAudioDeviceId || '';
                 }
+
+                // Populate speaker select (kept in bottom section)
                 if (spkSel) {
-                    spkSel.innerHTML = '';
+                    spkSel.innerHTML = '<option value="">Select speaker</option>';
                     speakers.forEach(d => {
                         const opt = document.createElement('option');
                         opt.value = d.deviceId;
@@ -835,19 +844,21 @@
                         spkSel.appendChild(opt);
                     });
                 }
-                if (camSel) {
-                    camSel.innerHTML = '';
+
+                // Populate camera dropdown (new location)
+                if (camDropdown) {
+                    camDropdown.innerHTML = '<option value="">Select camera</option>';
                     cams.forEach(d => {
                         const opt = document.createElement('option');
                         opt.value = d.deviceId;
                         opt.textContent = d.label || 'Camera';
-                        camSel.appendChild(opt);
+                        camDropdown.appendChild(opt);
                     });
                     if (!lobbyVideoDeviceId && cams[0]) {
                         lobbyVideoDeviceId = cams[0].deviceId;
                         window.lobbyVideoDeviceId = lobbyVideoDeviceId;
                     }
-                    camSel.value = lobbyVideoDeviceId || '';
+                    camDropdown.value = lobbyVideoDeviceId || '';
                 }
             } catch (e) {
                 console.warn('Unable to enumerate devices yet:', e);
@@ -865,11 +876,17 @@
                     stopLobbyPreview();
                     // Store lobby settings globally so they can be accessed when joining
                     // Use window variables to ensure we have the latest values
+                    // Get device IDs from dropdowns
+                    const micDropdown = document.getElementById('lobbyMicDropdown');
+                    const camDropdown = document.getElementById('lobbyCamDropdown');
+                    const finalAudioDeviceId = micDropdown && micDropdown.value ? micDropdown.value : (window.lobbyAudioDeviceId !== undefined ? window.lobbyAudioDeviceId : lobbyAudioDeviceId);
+                    const finalVideoDeviceId = camDropdown && camDropdown.value ? camDropdown.value : (window.lobbyVideoDeviceId !== undefined ? window.lobbyVideoDeviceId : lobbyVideoDeviceId);
+
                     window.lobbySettings = {
                         micEnabled: window.lobbyMicEnabled !== undefined ? window.lobbyMicEnabled : lobbyMicEnabled,
                         camEnabled: window.lobbyCamEnabled !== undefined ? window.lobbyCamEnabled : lobbyCamEnabled,
-                        audioDeviceId: window.lobbyAudioDeviceId !== undefined ? window.lobbyAudioDeviceId : lobbyAudioDeviceId,
-                        videoDeviceId: window.lobbyVideoDeviceId !== undefined ? window.lobbyVideoDeviceId : lobbyVideoDeviceId
+                        audioDeviceId: finalAudioDeviceId,
+                        videoDeviceId: finalVideoDeviceId
                     };
                 });
             }
@@ -896,16 +913,17 @@
                 });
             }
 
-            const micSel = document.getElementById('lobbyMicSelect');
+            const micDropdown = document.getElementById('lobbyMicDropdown');
             const spkSel = document.getElementById('lobbySpeakerSelect');
-            const camSel = document.getElementById('lobbyCameraSelect');
-            if (micSel) micSel.addEventListener('change', async (e) => {
+            const camDropdown = document.getElementById('lobbyCamDropdown');
+
+            if (micDropdown) micDropdown.addEventListener('change', async (e) => {
                 lobbyAudioDeviceId = e.target.value || null;
                 window.lobbyAudioDeviceId = lobbyAudioDeviceId;
                 // Only restart if mic is enabled
                 if (lobbyMicEnabled) await startLobbyPreview();
             });
-            if (camSel) camSel.addEventListener('change', async (e) => {
+            if (camDropdown) camDropdown.addEventListener('change', async (e) => {
                 lobbyVideoDeviceId = e.target.value || null;
                 window.lobbyVideoDeviceId = lobbyVideoDeviceId;
                 if (lobbyCamEnabled) await startLobbyPreview();
