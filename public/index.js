@@ -24,8 +24,7 @@ socket.request = function request(type, data = {}) {
 
 let rc = null
 
-// Local video is now rendered in remoteVideos grid, so localMedia is no longer needed
-const localMedia = null;
+const localMedia = document.getElementById('localMedia');
 const remoteVideos = document.getElementById('remoteVideos');
 const remoteAudios = document.getElementById('remoteAudios');
 const participantsPanel = document.getElementById('participantsPanel');

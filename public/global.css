@@ -460,9 +460,15 @@ body {
 }
 
 /* Local video overlay positioning (Google Meet style - bottom right) */
-/* Hidden since local video is now rendered in the grid with remote tiles */
 #localVideoContainer {
-    display: none !important;
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: 20;
+    width: 300px;
+    max-width: 25vw;
+    min-width: 200px;
+    transition: all 0.3s ease;
 }
 
 #localVideoContainer:hover {
