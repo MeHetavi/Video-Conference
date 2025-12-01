@@ -897,7 +897,6 @@ class RoomClient {
           const container = document.createElement('div');
           container.className = 'video-container';
           container.id = `container-local-${socket.id}`;
-          container.dataset.socketId = socket.id; // Store socket ID for tracking
           container.style.position = 'relative';
           container.style.width = '100%';
           container.style.height = '100%';
@@ -995,29 +994,8 @@ class RoomClient {
           container.appendChild(video);
           container.appendChild(overlay);
 
-          // Store reference in participantContainers so it's included in layout calculations
-          this.participantContainers.set(socket.id, container);
-
-          // Add click event listener to container to pin/unpin (same as remote videos)
-          if (!container.dataset.pinHandlerAttached) {
-            container.dataset.pinHandlerAttached = 'true';
-            container.style.cursor = 'pointer';
-            container.addEventListener('click', (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              this.togglePinVideo(socket.id);
-            });
-          }
-
           // Add the container to the remote videos container (render with remote tiles)
-          // Use this.remoteVideoEl if available, otherwise try to get from DOM
-          const remoteVideosContainer = this.remoteVideoEl || document.getElementById('remoteVideos');
-          if (!remoteVideosContainer) {
-            console.error('remoteVideos container not found. Make sure the element exists in the DOM.');
-            // Don't return, just log the error - the container creation should still work
-            return;
-          }
-          remoteVideosContainer.appendChild(container);
+          document.getElementById('remoteVideos').appendChild(container);
 
           try {
             const data = await this.socket.request('getRouterRtpCapabilities');
@@ -1199,9 +1177,8 @@ class RoomClient {
       return;
     }
 
-    const remoteVideosContainer = this.remoteVideoEl || document.getElementById('remoteVideos');
+    const remoteVideosContainer = document.getElementById('remoteVideos');
     if (!remoteVideosContainer) {
-      console.error('remoteVideos container not found in createParticipantContainers');
       return;
     }
 
@@ -2043,11 +2020,7 @@ class RoomClient {
         }
 
         // Ensure container is in the DOM
-        const remoteVideosContainer = this.remoteVideoEl || document.getElementById('remoteVideos');
-        if (!remoteVideosContainer) {
-          console.error('remoteVideos container not found when consuming video');
-          return;
-        }
+        const remoteVideosContainer = document.getElementById('remoteVideos');
         if (container.parentElement !== remoteVideosContainer) {
           remoteVideosContainer.appendChild(container);
         }
@@ -2377,7 +2350,7 @@ class RoomClient {
       }
 
       // Clear all video containers
-      const remoteVideosContainer = this.remoteVideoEl || document.getElementById('remoteVideos');
+      const remoteVideosContainer = document.getElementById('remoteVideos');
       if (remoteVideosContainer) {
         remoteVideosContainer.innerHTML = '';
       }
