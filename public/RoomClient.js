@@ -1010,7 +1010,14 @@ class RoomClient {
           }
 
           // Add the container to the remote videos container (render with remote tiles)
-          document.getElementById('remoteVideos').appendChild(container);
+          // Use this.remoteVideoEl if available, otherwise try to get from DOM
+          const remoteVideosContainer = this.remoteVideoEl || document.getElementById('remoteVideos');
+          if (!remoteVideosContainer) {
+            console.error('remoteVideos container not found. Make sure the element exists in the DOM.');
+            // Don't return, just log the error - the container creation should still work
+            return;
+          }
+          remoteVideosContainer.appendChild(container);
 
           try {
             const data = await this.socket.request('getRouterRtpCapabilities');
@@ -1192,8 +1199,9 @@ class RoomClient {
       return;
     }
 
-    const remoteVideosContainer = document.getElementById('remoteVideos');
+    const remoteVideosContainer = this.remoteVideoEl || document.getElementById('remoteVideos');
     if (!remoteVideosContainer) {
+      console.error('remoteVideos container not found in createParticipantContainers');
       return;
     }
 
@@ -2035,7 +2043,11 @@ class RoomClient {
         }
 
         // Ensure container is in the DOM
-        const remoteVideosContainer = document.getElementById('remoteVideos');
+        const remoteVideosContainer = this.remoteVideoEl || document.getElementById('remoteVideos');
+        if (!remoteVideosContainer) {
+          console.error('remoteVideos container not found when consuming video');
+          return;
+        }
         if (container.parentElement !== remoteVideosContainer) {
           remoteVideosContainer.appendChild(container);
         }
@@ -2365,7 +2377,7 @@ class RoomClient {
       }
 
       // Clear all video containers
-      const remoteVideosContainer = document.getElementById('remoteVideos');
+      const remoteVideosContainer = this.remoteVideoEl || document.getElementById('remoteVideos');
       if (remoteVideosContainer) {
         remoteVideosContainer.innerHTML = '';
       }
