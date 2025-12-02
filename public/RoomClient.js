@@ -1994,54 +1994,19 @@ class RoomClient {
           audio = true
           break
         case mediaType.video:
-          // Detect mobile device
-          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-          
-          // Validate deviceId before using it
-          let validDeviceId = deviceId;
-          if (deviceId) {
-            try {
-              const devices = await navigator.mediaDevices.enumerateDevices();
-              const videoDevices = devices.filter(d => d.kind === 'videoinput');
-              if (!videoDevices.some(d => d.deviceId === deviceId)) {
-                console.warn('Device ID not found, using default');
-                validDeviceId = null;
-              }
-            } catch (err) {
-              console.warn('Could not validate device ID:', err);
-              validDeviceId = null;
+          mediaConstraints = {
+            audio: false,
+            video: {
+              width: {
+                min: 640,
+                ideal: 1920
+              },
+              height: {
+                min: 400,
+                ideal: 1080
+              },
+              deviceId: deviceId
             }
-          }
-          
-          // Mobile-friendly constraints
-          if (isMobile) {
-            mediaConstraints = {
-              audio: false,
-              video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                facingMode: 'user', // Prefer front camera on mobile
-                ...(validDeviceId ? { deviceId: validDeviceId } : {})
-              }
-            };
-          } else {
-            // Desktop constraints with fallback
-            mediaConstraints = {
-              audio: false,
-              video: {
-                width: { 
-                  min: 320,
-                  ideal: 1280,
-                  max: 1920
-                },
-                height: { 
-                  min: 240,
-                  ideal: 720,
-                  max: 1080
-                },
-                ...(validDeviceId ? { deviceId: validDeviceId } : {})
-              }
-            };
           }
           break
         case mediaType.screen:
@@ -2189,17 +2154,12 @@ class RoomClient {
 
         this.getParticipants()
       } catch (err) {
-        console.error('Error in produce method:', err);
-        // Re-throw to be handled by caller
         throw err
       }
     } catch (err) {
       // Attempt to recover if it's a transport-related error
       if (err.message && err.message.includes('transport')) {
         await this.handleTransportFailure();
-      } else {
-        // Re-throw other errors so they can be handled by the UI
-        throw err;
       }
     }
   }
