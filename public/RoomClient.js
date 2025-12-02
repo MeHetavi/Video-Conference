@@ -1628,25 +1628,29 @@ class RoomClient {
         : `${API_BASE_URL}/attendances/session/${session_id}/leave`;
 
       // Prepare headers - include Authorization only if token is available
-      const headers = {
-        'Content-Type': 'application/json'
-      };
+      const headers = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      // Prepare request body - include name and metadata for join action
+      // Prepare request body - include name and metadata for join action as FormData
       let requestBody = null;
       if (action === 'join') {
-        const body = {};
+        const formData = new FormData();
         if (name) {
-          body.name = name;
+          formData.append('name', name);
         }
         // Use provided metadata or get device info
         const deviceInfo = metadata || this.getDeviceInfo();
-        body.device_name = deviceInfo.device_name || deviceInfo.device_type;
-        body.metadata = deviceInfo;
-        requestBody = JSON.stringify(body);
+        formData.append('device_name', deviceInfo.device_name || deviceInfo.device_type);
+
+        // Append metadata as JSON string (backend can parse it)
+        formData.append('metadata', JSON.stringify(deviceInfo));
+
+        requestBody = formData;
+        // Don't set Content-Type header for FormData - browser will set it with boundary automatically
+      } else {
+        // For leave action, no body needed
       }
 
       // Make API call (even without token)
