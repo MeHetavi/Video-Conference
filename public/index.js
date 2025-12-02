@@ -41,6 +41,8 @@ async function joinRoom(name, room_id) {
   // If no token, allow joining as a normal participant without blocking.
   let isTrainer = '0';
   let ownershipData = null;
+  let isOngoing = null;
+  let isOwner = null;
 
   const token = localStorage.getItem('access_token') || getTokenFromURL();
 
@@ -92,6 +94,9 @@ async function joinRoom(name, room_id) {
 
           console.log('Ownership check response:', ownershipData.is_owner, ownershipData.is_trainer_owner, ownershipData.is_institute_owner);
 
+          // Store is_owner value for session start check
+          isOwner = ownershipData.is_owner === true;
+
           // Determine trainer status from ownership data only
           if (ownershipData.is_owner || ownershipData.is_trainer_owner || ownershipData.is_institute_owner) {
             isTrainer = '1';
@@ -106,7 +111,7 @@ async function joinRoom(name, room_id) {
       console.error('Error checking ownership, continuing as participant:', error);
     }
 
-    // If not a trainer and we have a token, optionally check if session is ongoing (best-effort).
+    // If not a trainer and we have a token, check if session is ongoing.
     if (isTrainer === '0' || isTrainer === false) {
       try {
         const API_BASE_URL = window.API_BASE_URL || 'https://prana.ycp.life/api/v1';
@@ -122,7 +127,25 @@ async function joinRoom(name, room_id) {
           const data = await response.json();
           console.log('Session ongoing check response:', data);
 
-          const isOngoing = data?.data?.ongoing === true || data?.ongoing === true;
+          // Extract ongoing status - check both possible response structures
+          const ongoingFromData = data?.data?.ongoing;
+          const ongoingFromRoot = data?.ongoing;
+          isOngoing = ongoingFromData !== undefined ? ongoingFromData : (ongoingFromRoot !== undefined ? ongoingFromRoot : null);
+
+          // Check if session has not started: ongoing is false AND user is not owner
+          // Only block if both values are explicitly false (not null/undefined)
+          // This ensures we got valid responses from both APIs before blocking
+          if (isOngoing === false && isOwner === false && ownershipData !== null && data?.data !== undefined) {
+            const message = 'Session has not started yet, wait for the trainer to start the session';
+            console.warn(message);
+            if (typeof showWarningNotification === 'function') {
+              showWarningNotification(message, 'Session Not Started');
+            } else {
+              alert(message);
+            }
+            return; // Prevent joining the room
+          }
+
           if (!isOngoing || !data || (typeof data === 'object' && Object.keys(data).length === 0) || data.success === false) {
             console.warn('Session not reported as ongoing, but allowing join as requested.');
           }
@@ -156,6 +179,22 @@ async function joinRoom(name, room_id) {
       if (response.ok) {
         const data = await response.json().catch(() => ({}));
         console.log('Unauthenticated session ongoing check response:', data);
+
+        // For unauthenticated users, check if session is ongoing
+        const ongoingFromData = data?.data?.ongoing;
+        const ongoingFromRoot = data?.ongoing;
+        isOngoing = ongoingFromData !== undefined ? ongoingFromData : (ongoingFromRoot !== undefined ? ongoingFromRoot : null);
+
+        if (isOngoing === false && data?.data !== undefined) {
+          const message = 'Session has not started yet, wait for the trainer to start the session';
+          console.warn(message);
+          if (typeof showWarningNotification === 'function') {
+            showWarningNotification(message, 'Session Not Started');
+          } else {
+            alert(message);
+          }
+          return; // Prevent joining the room
+        }
       } else {
         console.warn('Unauthenticated ongoing check failed with status:', response.status);
       }
