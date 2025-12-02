@@ -1633,10 +1633,11 @@ class RoomClient {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      // Prepare request body - include name and metadata for join action as FormData
+      // Prepare request body - send data as FormData for both join and leave actions
       let requestBody = null;
+      const formData = new FormData();
+
       if (action === 'join') {
-        const formData = new FormData();
         if (name) {
           formData.append('name', name);
         }
@@ -1646,12 +1647,18 @@ class RoomClient {
 
         // Append metadata as JSON string (backend can parse it)
         formData.append('metadata', JSON.stringify(deviceInfo));
+      } else if (action === 'leave') {
+        // For leave action, send basic device info and timestamp
+        const deviceInfo = metadata || this.getDeviceInfo();
+        formData.append('device_name', deviceInfo.device_name || deviceInfo.device_type);
+        formData.append('timestamp', new Date().toISOString());
 
-        requestBody = formData;
-        // Don't set Content-Type header for FormData - browser will set it with boundary automatically
-      } else {
-        // For leave action, no body needed
+        // Append metadata as JSON string (backend can parse it)
+        formData.append('metadata', JSON.stringify(deviceInfo));
       }
+
+      requestBody = formData;
+      // Don't set Content-Type header for FormData - browser will set it with boundary automatically
 
       // Make API call (even without token)
       const fetchOptions = {
