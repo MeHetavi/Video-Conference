@@ -33,6 +33,23 @@ const toggleParticipantsBtn = document.getElementById('toggleParticipantsBtn');
 const participantsBadge = document.getElementById('participantsBadge');
 
 async function joinRoom(name, room_id) {
+  // Validate name - trim whitespace and check if empty
+  const trimmedName = name ? name.trim() : '';
+  if (!trimmedName || trimmedName.length === 0) {
+    const errorMessage = 'Please enter your name before joining the session';
+    if (typeof showErrorNotification === 'function') {
+      showErrorNotification(errorMessage, 'Name Required');
+    } else {
+      alert(errorMessage);
+    }
+    // Focus on name input if it exists
+    const nameInput = document.getElementById('nameInput');
+    if (nameInput) {
+      nameInput.focus();
+    }
+    return;
+  }
+
   if (rc && rc.isOpen()) {
     return;
   }
@@ -218,7 +235,7 @@ async function joinRoom(name, room_id) {
     window.mediasoupClient,
     socket,
     room_id,
-    name,
+    trimmedName, // Use trimmed name
     roomOpen,
     isTrainer
   );
