@@ -887,8 +887,8 @@ class RoomClient {
       profile_pic = window.userProfile.profile_pic;
     }
 
-    // Track attendance - join session
-    this.trackAttendance(room_id, 'join').catch(err => {
+    // Track attendance - join session (with name and device metadata)
+    this.trackAttendance(room_id, 'join', name, null).catch(err => {
       console.error('Failed to track attendance (join):', err);
     });
 
@@ -1500,8 +1500,121 @@ class RoomClient {
     updateLayout();
   }
 
+  // Helper function to detect device type and collect metadata
+  getDeviceInfo() {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    const screenWidth = window.screen ? window.screen.width : null;
+    const screenHeight = window.screen ? window.screen.height : null;
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+    // Detect device type
+    let deviceType = 'desktop';
+    const isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    const isTablet = /iPad|Android(?!.*Mobile)|Tablet/i.test(userAgent) ||
+      (screenWidth && screenWidth >= 768 && screenWidth < 1024 && isMobile);
+
+    if (isTablet) {
+      deviceType = 'tablet';
+    } else if (isMobile) {
+      deviceType = 'mobile';
+    } else if (screenWidth && screenWidth < 768) {
+      deviceType = 'mobile';
+    } else if (screenWidth && screenWidth >= 768 && screenWidth < 1024) {
+      deviceType = 'tablet';
+    } else {
+      deviceType = 'laptop';
+      // Check if it's a desktop (larger screen, typically external monitor)
+      if (screenWidth && screenWidth >= 1920) {
+        deviceType = 'desktop';
+      }
+    }
+
+    // Detect browser
+    let browser = 'unknown';
+    if (userAgent.indexOf('Chrome') > -1 && userAgent.indexOf('Edg') === -1) {
+      browser = 'chrome';
+    } else if (userAgent.indexOf('Firefox') > -1) {
+      browser = 'firefox';
+    } else if (userAgent.indexOf('Safari') > -1 && userAgent.indexOf('Chrome') === -1) {
+      browser = 'safari';
+    } else if (userAgent.indexOf('Edg') > -1) {
+      browser = 'edge';
+    } else if (userAgent.indexOf('Opera') > -1 || userAgent.indexOf('OPR') > -1) {
+      browser = 'opera';
+    }
+
+    // Detect OS
+    let os = 'unknown';
+    if (userAgent.indexOf('Windows') > -1) {
+      os = 'windows';
+    } else if (userAgent.indexOf('Mac') > -1) {
+      os = 'macos';
+    } else if (userAgent.indexOf('Linux') > -1) {
+      os = 'linux';
+    } else if (userAgent.indexOf('Android') > -1) {
+      os = 'android';
+    } else if (userAgent.indexOf('iOS') > -1 || /iPad|iPhone|iPod/.test(userAgent)) {
+      os = 'ios';
+    }
+
+    // Get timezone
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    // Get language
+    const language = navigator.language || navigator.userLanguage;
+
+    // Check if touch device
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    return {
+      device_type: deviceType,
+      device_name: `${deviceType.charAt(0).toUpperCase() + deviceType.slice(1)}`,
+      browser: browser,
+      browser_version: this.getBrowserVersion(userAgent, browser),
+      os: os,
+      os_version: this.getOSVersion(userAgent, os),
+      screen_width: screenWidth,
+      screen_height: screenHeight,
+      viewport_width: viewportWidth,
+      viewport_height: viewportHeight,
+      user_agent: userAgent,
+      timezone: timezone,
+      language: language,
+      is_touch_device: isTouchDevice,
+      platform: navigator.platform || 'unknown',
+      cookie_enabled: navigator.cookieEnabled,
+      online: navigator.onLine,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  // Helper to extract browser version
+  getBrowserVersion(userAgent, browser) {
+    const versionMatch = userAgent.match(new RegExp(`${browser}[\\s/]+([\\d.]+)`, 'i'));
+    return versionMatch ? versionMatch[1] : 'unknown';
+  }
+
+  // Helper to extract OS version
+  getOSVersion(userAgent, os) {
+    if (os === 'windows') {
+      const match = userAgent.match(/Windows NT ([0-9.]+)/);
+      return match ? match[1] : 'unknown';
+    } else if (os === 'macos') {
+      const match = userAgent.match(/Mac OS X ([0-9_]+)/);
+      return match ? match[1].replace(/_/g, '.') : 'unknown';
+    } else if (os === 'android') {
+      const match = userAgent.match(/Android ([0-9.]+)/);
+      return match ? match[1] : 'unknown';
+    } else if (os === 'ios') {
+      const match = userAgent.match(/OS ([0-9_]+)/);
+      return match ? match[1].replace(/_/g, '.') : 'unknown';
+    }
+    return 'unknown';
+  }
+
   // Track attendance API call
-  async trackAttendance(session_id, action) {
+  async trackAttendance(session_id, action, name = null, metadata = null) {
     try {
       // Get token from localStorage or URL (optional - API will be called even without token)
       const token = localStorage.getItem('access_token') || (typeof getTokenFromURL === 'function' ? getTokenFromURL() : null);
@@ -1522,11 +1635,30 @@ class RoomClient {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      // Prepare request body - include name and metadata for join action
+      let requestBody = null;
+      if (action === 'join') {
+        const body = {};
+        if (name) {
+          body.name = name;
+        }
+        // Use provided metadata or get device info
+        const deviceInfo = metadata || this.getDeviceInfo();
+        body.device_name = deviceInfo.device_name || deviceInfo.device_type;
+        body.metadata = deviceInfo;
+        requestBody = JSON.stringify(body);
+      }
+
       // Make API call (even without token)
-      const response = await fetch(endpoint, {
+      const fetchOptions = {
         method: 'POST',
         headers: headers
-      });
+      };
+      if (requestBody) {
+        fetchOptions.body = requestBody;
+      }
+
+      const response = await fetch(endpoint, fetchOptions);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
