@@ -398,7 +398,7 @@ function initEnumerateDevices() {
       stream.getTracks().forEach(function (track) {
         track.stop()
       })
-      
+
       // Listen for device changes
       if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
         navigator.mediaDevices.addEventListener('devicechange', () => {
@@ -428,11 +428,11 @@ function enumerateDevices() {
   // Load mediaDevice options
   const audioDeviceDropdown = document.getElementById('audioDeviceDropdown');
   const videoDeviceDropdown = document.getElementById('videoDeviceDropdown');
-  
+
   // Store current values before clearing
   const currentAudioValue = audioDeviceDropdown ? audioDeviceDropdown.value : null;
   const currentVideoValue = videoDeviceDropdown ? videoDeviceDropdown.value : null;
-  
+
   // Clear dropdowns but keep the first option
   if (audioDeviceDropdown) {
     audioDeviceDropdown.innerHTML = '<option value="">Select mic</option>';
@@ -440,16 +440,16 @@ function enumerateDevices() {
   if (videoDeviceDropdown) {
     videoDeviceDropdown.innerHTML = '<option value="">Select camera</option>';
   }
-  
+
   navigator.mediaDevices.enumerateDevices().then((devices) => {
     const seenAudioDevices = new Set();
     const seenVideoDevices = new Set();
-    
+
     devices.forEach((device) => {
       let el = null
       let dropdownEl = null
       let seenSet = null
-      
+
       if ('audioinput' === device.kind) {
         el = audioSelect
         dropdownEl = audioDeviceDropdown
@@ -469,7 +469,7 @@ function enumerateDevices() {
       option.value = device.deviceId
       option.innerText = device.label || (device.kind === 'audioinput' ? 'Microphone' : 'Camera')
       el.appendChild(option)
-      
+
       // Also add to the control bar dropdown
       if (dropdownEl) {
         const dropdownOption = document.createElement('option')
@@ -477,10 +477,10 @@ function enumerateDevices() {
         dropdownOption.innerText = device.label || (device.kind === 'audioinput' ? 'Microphone' : 'Camera')
         dropdownEl.appendChild(dropdownOption)
       }
-      
+
       isEnumerateDevices = true
     })
-    
+
     // Restore or sync dropdown values
     if (audioSelect && audioDeviceDropdown) {
       if (currentAudioValue && audioDeviceDropdown.querySelector(`option[value="${currentAudioValue}"]`)) {
@@ -773,12 +773,12 @@ document.addEventListener('keydown', (e) => {
 // Handle audio device change from dropdown
 async function handleAudioDeviceChange(deviceId) {
   if (!rc || !deviceId) return
-  
+
   const audioSelect = document.getElementById('audioSelect')
   if (audioSelect) {
     audioSelect.value = deviceId
   }
-  
+
   // If audio is currently active, switch to the new device
   if (rc.producerLabel && rc.producerLabel.has(RoomClient.mediaType.audio)) {
     try {
@@ -795,12 +795,12 @@ async function handleAudioDeviceChange(deviceId) {
 // Handle video device change from dropdown
 async function handleVideoDeviceChange(deviceId) {
   if (!rc || !deviceId) return
-  
+
   const videoSelect = document.getElementById('videoSelect')
   if (videoSelect) {
     videoSelect.value = deviceId
   }
-  
+
   // If video is currently active, switch to the new device
   if (rc.producerLabel && rc.producerLabel.has(RoomClient.mediaType.video)) {
     try {

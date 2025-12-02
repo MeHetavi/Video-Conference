@@ -1980,6 +1980,10 @@ class RoomClient {
 
   async produce(type, deviceId = null, codec = 'vp8') {
     try {
+      const isMobileDevice =
+        typeof navigator !== 'undefined' &&
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || '')
+
       let mediaConstraints = {}
       let audio = false
       let screen = false
@@ -2014,28 +2018,24 @@ class RoomClient {
             }
           }
 
-          const isMobile =
-            typeof navigator !== 'undefined' &&
-            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-
-          const videoConstraints = isMobile
+          const videoConstraints = isMobileDevice
             ? {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                facingMode: 'user'
-              }
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+              facingMode: 'user'
+            }
             : {
-                width: {
-                  min: 320,
-                  ideal: 1280,
-                  max: 1920
-                },
-                height: {
-                  min: 240,
-                  ideal: 720,
-                  max: 1080
-                }
+              width: {
+                min: 320,
+                ideal: 1280,
+                max: 1920
+              },
+              height: {
+                min: 240,
+                ideal: 720,
+                max: 1080
               }
+            }
 
           if (validDeviceId) {
             videoConstraints.deviceId = { exact: validDeviceId }
@@ -2069,27 +2069,33 @@ class RoomClient {
         navigator.mediaDevices.getSupportedConstraints()
 
         const track = audio ? stream.getAudioTracks()[0] : stream.getVideoTracks()[0]
-        const params = {
-          track
-        }
+        const params = { track }
         if (!audio && !screen) {
-          params.encodings = [
-            {
-              rid: 'r0',
-              maxBitrate: 100000,
-              scalabilityMode: 'S1T3'
-            },
-            {
-              rid: 'r1',
-              maxBitrate: 300000,
-              scalabilityMode: 'S1T3'
-            },
-            {
-              rid: 'r2',
-              maxBitrate: 900000,
-              scalabilityMode: 'S1T3'
-            }
-          ]
+          if (isMobileDevice) {
+            params.encodings = [
+              {
+                maxBitrate: 500000
+              }
+            ]
+          } else {
+            params.encodings = [
+              {
+                rid: 'r0',
+                maxBitrate: 100000,
+                scalabilityMode: 'S1T3'
+              },
+              {
+                rid: 'r1',
+                maxBitrate: 300000,
+                scalabilityMode: 'S1T3'
+              },
+              {
+                rid: 'r2',
+                maxBitrate: 900000,
+                scalabilityMode: 'S1T3'
+              }
+            ]
+          }
           params.codecOptions = {
             videoGoogleStartBitrate: 1000
           }
