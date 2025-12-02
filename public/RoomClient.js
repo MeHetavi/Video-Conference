@@ -2253,11 +2253,13 @@ class RoomClient {
         const params = { track }
         if (!audio && !screen) {
           if (isMobileDevice) {
+            // Simplified encoding for mobile devices - no simulcast, no codec options
             params.encodings = [
               {
                 maxBitrate: 500000
               }
             ]
+            // Don't set codecOptions for mobile - it can cause SDP negotiation issues
           } else {
             params.encodings = [
               {
@@ -2276,21 +2278,27 @@ class RoomClient {
                 scalabilityMode: 'S1T3'
               }
             ]
-          }
-          params.codecOptions = {
-            videoGoogleStartBitrate: 1000
+            params.codecOptions = {
+              videoGoogleStartBitrate: 1000
+            }
           }
         }
-        const producer = await this.producerTransport.produce({
+        // Build producer options - only include codecOptions if defined
+        const producerOptions = {
           track,
           encodings: params.encodings,
-          codecOptions: params.codecOptions,
           codec: params.codec,
           appData: {
             socketId: socket.id,
             mediaType: type
           }
-        })
+        }
+        // Only add codecOptions if it exists (not for mobile)
+        if (params.codecOptions) {
+          producerOptions.codecOptions = params.codecOptions
+        }
+
+        const producer = await this.producerTransport.produce(producerOptions)
 
 
         this.producers.set(producer.id, producer)
@@ -2393,6 +2401,7 @@ class RoomClient {
   }
 
   async consume(producer_id) {
+    let consumeResult;
     try {
       // Check if device is initialized
       if (!this.device || !this.device.rtpCapabilities) {
@@ -2406,12 +2415,28 @@ class RoomClient {
         return;
       }
 
-      const consumeResult = await this.getConsumeStream(producer_id);
+      consumeResult = await this.getConsumeStream(producer_id);
       if (!consumeResult) {
         console.error('Failed to get consume stream for producer:', producer_id);
         return;
       }
+    } catch (error) {
+      // Handle mobile-specific SDP negotiation errors
+      if (error.message && (
+        error.message.includes('setRemoteDescription') ||
+        error.message.includes('recv parameters') ||
+        error.message.includes('m-section')
+      )) {
+        console.warn('Mobile SDP negotiation error (this may be a known mobile Chrome limitation):', error.message);
+        // Don't throw - allow the app to continue even if this consumer fails
+        return;
+      }
+      // Re-throw other errors
+      console.error('Error consuming producer:', producer_id, error);
+      throw error;
+    }
 
+    try {
       const { consumer, stream, kind, appData } = consumeResult;
 
       // Store the consumer with its metadata
