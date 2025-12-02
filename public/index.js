@@ -810,6 +810,32 @@ async function handleVideoDeviceChange(deviceId) {
       await rc.produce(RoomClient.mediaType.video, deviceId)
     } catch (error) {
       console.error('Error switching video device:', error)
+      let errorMsg = 'Failed to switch camera.';
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        errorMsg = 'Camera permission denied. Please allow camera access.';
+      } else if (error.name === 'NotFoundError') {
+        errorMsg = 'Selected camera not found. Please choose another camera.';
+      } else if (error.name === 'NotReadableError') {
+        errorMsg = 'Camera is being used by another application.';
+      } else if (error.name === 'OverconstrainedError') {
+        errorMsg = 'Camera does not support the required settings.';
+      }
+      if (typeof showErrorNotification === 'function') {
+        showErrorNotification(errorMsg, 'Camera Error');
+      } else {
+        alert(errorMsg);
+      }
     }
+  }
+}
+
+// Helper function to check camera permission
+async function checkCameraPermission() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    stream.getTracks().forEach(track => track.stop());
+    return { granted: true, error: null };
+  } catch (error) {
+    return { granted: false, error: error.name };
   }
 }
