@@ -804,12 +804,73 @@ async function handleVideoDeviceChange(deviceId) {
   // If video is currently active, switch to the new device
   if (rc.producerLabel && rc.producerLabel.has(RoomClient.mediaType.video)) {
     try {
-      // Close current video producer
       await rc.closeProducer(RoomClient.mediaType.video)
-      // Start with new device
       await rc.produce(RoomClient.mediaType.video, deviceId)
     } catch (error) {
       console.error('Error switching video device:', error)
+      const message = getCameraErrorMessage(error, 'Failed to switch camera. Please try another device.');
+      showCameraError(message)
     }
+  }
+}
+
+function getSelectedVideoDeviceId() {
+  const videoDropdown = document.getElementById('videoDeviceDropdown')
+  if (videoDropdown && videoDropdown.value) {
+    return videoDropdown.value
+  }
+  const videoSelect = document.getElementById('videoSelect')
+  if (videoSelect && videoSelect.value) {
+    return videoSelect.value
+  }
+  return null
+}
+
+function showCameraError(message) {
+  if (typeof showErrorNotification === 'function') {
+    showErrorNotification(message, 'Camera Error')
+  } else {
+    alert(message)
+  }
+}
+
+function getCameraErrorMessage(error, fallbackMessage = 'Failed to start video.') {
+  if (!error) return fallbackMessage
+  const name = error.name || error.code
+  switch (name) {
+    case 'NotAllowedError':
+    case 'PermissionDeniedError':
+      return 'Camera permission denied. Please allow camera access in your browser settings.'
+    case 'NotFoundError':
+    case 'DevicesNotFoundError':
+      return 'No camera found. Please ensure a camera is connected and enabled.'
+    case 'NotReadableError':
+    case 'TrackStartError':
+      return 'Camera is currently in use by another application. Close it and try again.'
+    case 'OverconstrainedError':
+      return 'Camera does not support the requested settings. Trying a lower resolution may help.'
+    default:
+      return error.message || fallbackMessage
+  }
+}
+
+async function startVideoWithHandling() {
+  if (!rc) return
+  const deviceId = getSelectedVideoDeviceId()
+  try {
+    await rc.produce(RoomClient.mediaType.video, deviceId)
+  } catch (error) {
+    console.error('Failed to start video:', error)
+    if (error.name === 'OverconstrainedError') {
+      try {
+        await rc.produce(RoomClient.mediaType.video, null)
+        return
+      } catch (fallbackError) {
+        console.error('Fallback video start failed:', fallbackError)
+        showCameraError(getCameraErrorMessage(fallbackError))
+        return
+      }
+    }
+    showCameraError(getCameraErrorMessage(error))
   }
 }

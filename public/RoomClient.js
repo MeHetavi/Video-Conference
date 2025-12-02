@@ -1993,22 +1993,60 @@ class RoomClient {
           }
           audio = true
           break
-        case mediaType.video:
-          mediaConstraints = {
-            audio: false,
-            video: {
-              width: {
-                min: 640,
-                ideal: 1920
-              },
-              height: {
-                min: 400,
-                ideal: 1080
-              },
-              deviceId: deviceId
+        case mediaType.video: {
+          let validDeviceId = deviceId
+          if (
+            validDeviceId &&
+            typeof navigator !== 'undefined' &&
+            navigator.mediaDevices &&
+            typeof navigator.mediaDevices.enumerateDevices === 'function'
+          ) {
+            try {
+              const devices = await navigator.mediaDevices.enumerateDevices()
+              const videoDevices = devices.filter((d) => d.kind === 'videoinput')
+              if (!videoDevices.some((d) => d.deviceId === validDeviceId)) {
+                console.warn('Selected camera not found. Falling back to default camera.')
+                validDeviceId = null
+              }
+            } catch (err) {
+              console.warn('Unable to verify camera device. Using default camera.', err)
+              validDeviceId = null
             }
           }
+
+          const isMobile =
+            typeof navigator !== 'undefined' &&
+            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+
+          const videoConstraints = isMobile
+            ? {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                facingMode: 'user'
+              }
+            : {
+                width: {
+                  min: 320,
+                  ideal: 1280,
+                  max: 1920
+                },
+                height: {
+                  min: 240,
+                  ideal: 720,
+                  max: 1080
+                }
+              }
+
+          if (validDeviceId) {
+            videoConstraints.deviceId = { exact: validDeviceId }
+          }
+
+          mediaConstraints = {
+            audio: false,
+            video: videoConstraints
+          }
           break
+        }
         case mediaType.screen:
           mediaConstraints = false
           screen = true
@@ -2154,12 +2192,15 @@ class RoomClient {
 
         this.getParticipants()
       } catch (err) {
+        console.error('Error while producing media:', err)
         throw err
       }
     } catch (err) {
       // Attempt to recover if it's a transport-related error
       if (err.message && err.message.includes('transport')) {
         await this.handleTransportFailure();
+      } else {
+        throw err
       }
     }
   }
