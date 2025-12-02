@@ -836,12 +836,20 @@ class RoomClient {
         const endpoint = `${API_BASE_URL}/attendances/session/${this.room_id}/leave`;
 
         // Prepare headers - include Authorization only if token is available
-        const headers = {
-          'Content-Type': 'application/json'
-        };
+        const headers = {};
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
         }
+
+        // Prepare FormData with name and device info
+        const formData = new FormData();
+        if (this.name) {
+          formData.append('name', this.name);
+        }
+        const deviceInfo = this.getDeviceInfo();
+        formData.append('device_name', deviceInfo.device_name || deviceInfo.device_type);
+        formData.append('timestamp', new Date().toISOString());
+        formData.append('metadata', JSON.stringify(deviceInfo));
 
         // Use fetch with keepalive for reliable tracking on page unload
         // keepalive ensures the request continues even after page unload
@@ -849,6 +857,7 @@ class RoomClient {
         fetch(endpoint, {
           method: 'POST',
           headers: headers,
+          body: formData,
           keepalive: true
         }).catch(() => { }); // Ignore errors on unload
       }
@@ -1648,7 +1657,10 @@ class RoomClient {
         // Append metadata as JSON string (backend can parse it)
         formData.append('metadata', JSON.stringify(deviceInfo));
       } else if (action === 'leave') {
-        // For leave action, send basic device info and timestamp
+        // For leave action, send name, device info and timestamp
+        if (name) {
+          formData.append('name', name);
+        }
         const deviceInfo = metadata || this.getDeviceInfo();
         formData.append('device_name', deviceInfo.device_name || deviceInfo.device_type);
         formData.append('timestamp', new Date().toISOString());
@@ -3037,7 +3049,7 @@ class RoomClient {
       // Track attendance - leave session (before reload)
       if (this.room_id && !offline) {
         try {
-          await this.trackAttendance(this.room_id, 'leave');
+          await this.trackAttendance(this.room_id, 'leave', this.name);
         } catch (err) {
           console.error('Failed to track attendance (leave):', err);
           // Continue with exit even if attendance tracking fails
