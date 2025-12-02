@@ -830,22 +830,27 @@ class RoomClient {
     // Track attendance on page unload (browser close/navigation)
     this.beforeUnloadHandler = (event) => {
       if (this.room_id && this._isOpen) {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-          const API_BASE_URL = window.API_BASE_URL || 'https://prana.ycp.life/api/v1';
-          const endpoint = `${API_BASE_URL}/attendances/session/${this.room_id}/leave`;
+        // Get token from localStorage or URL (optional - API will be called even without token)
+        const token = localStorage.getItem('access_token') || (typeof getTokenFromURL === 'function' ? getTokenFromURL() : null);
+        const API_BASE_URL = window.API_BASE_URL || 'https://prana.ycp.life/api/v1';
+        const endpoint = `${API_BASE_URL}/attendances/session/${this.room_id}/leave`;
 
-          // Use fetch with keepalive for reliable tracking on page unload
-          // keepalive ensures the request continues even after page unload
-          fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            keepalive: true
-          }).catch(() => { }); // Ignore errors on unload
+        // Prepare headers - include Authorization only if token is available
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
         }
+
+        // Use fetch with keepalive for reliable tracking on page unload
+        // keepalive ensures the request continues even after page unload
+        // Call API even without token
+        fetch(endpoint, {
+          method: 'POST',
+          headers: headers,
+          keepalive: true
+        }).catch(() => { }); // Ignore errors on unload
       }
     };
     window.addEventListener('beforeunload', this.beforeUnloadHandler);
@@ -1498,12 +1503,8 @@ class RoomClient {
   // Track attendance API call
   async trackAttendance(session_id, action) {
     try {
-      // Get token from localStorage
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        console.warn('No access token found for attendance tracking');
-        return;
-      }
+      // Get token from localStorage or URL (optional - API will be called even without token)
+      const token = localStorage.getItem('access_token') || (typeof getTokenFromURL === 'function' ? getTokenFromURL() : null);
 
       // Get API base URL
       const API_BASE_URL = window.API_BASE_URL || 'https://prana.ycp.life/api/v1';
@@ -1513,13 +1514,18 @@ class RoomClient {
         ? `${API_BASE_URL}/attendances/session/${session_id}/join`
         : `${API_BASE_URL}/attendances/session/${session_id}/leave`;
 
-      // Make API call
+      // Prepare headers - include Authorization only if token is available
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // Make API call (even without token)
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers: headers
       });
 
       if (!response.ok) {
