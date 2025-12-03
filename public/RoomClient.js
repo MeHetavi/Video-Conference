@@ -2298,7 +2298,34 @@ class RoomClient {
           producerOptions.codecOptions = params.codecOptions
         }
 
-        const producer = await this.producerTransport.produce(producerOptions)
+        let producer
+        try {
+          producer = await this.producerTransport.produce(producerOptions)
+        } catch (produceError) {
+          const isSimulcastError =
+            !audio &&
+            !screen &&
+            !isMobileDevice &&
+            produceError &&
+            produceError.message &&
+            (
+              produceError.message.includes('recv parameters') ||
+              produceError.message.includes('ERROR_CONTENT') ||
+              produceError.message.includes('m-section')
+            )
+
+          if (isSimulcastError) {
+            console.warn('Simulcast produce failed, retrying without simulcast encodings:', produceError)
+            const fallbackOptions = {
+              ...producerOptions,
+              encodings: undefined,
+              codecOptions: undefined
+            }
+            producer = await this.producerTransport.produce(fallbackOptions)
+          } else {
+            throw produceError
+          }
+        }
 
 
         this.producers.set(producer.id, producer)
