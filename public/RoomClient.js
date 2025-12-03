@@ -2274,7 +2274,7 @@ class RoomClient {
               },
               {
                 rid: 'r2',
-                maxBitrate: 900000,
+                maxBitrate: 1200000,
                 scalabilityMode: 'S1T3'
               }
             ]
