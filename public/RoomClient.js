@@ -769,7 +769,7 @@ class RoomClient {
     this.mutedParticipants = new Map();
     this.lastMuteNotification = new Map(); // Track last mute notification time to prevent duplicates
     this.name = name
-    this.log_id = null // Store log_id from join API response
+    this.attendance_id = null // Store attendance_id from join API response
     this.localMediaEl = localMediaEl
     this.remoteVideoEl = remoteVideoEl
     this.remoteAudioEl = remoteAudioEl
@@ -842,14 +842,14 @@ class RoomClient {
           headers['Authorization'] = `Bearer ${token}`;
         }
 
-        // Prepare FormData with name, device info, and log_id
+        // Prepare FormData with name, device info, and attendance_id
         const formData = new FormData();
         if (this.name) {
           formData.append('name', this.name);
         }
-        // Include log_id if available (from join response)
-        if (this.log_id) {
-          formData.append('log_id', this.log_id);
+        // Include attendance_id if available (from join response)
+        if (this.attendance_id) {
+          formData.append('attendance_id', this.attendance_id);
         }
         const deviceInfo = this.getDeviceInfo();
         formData.append('device_name', deviceInfo.device_name || deviceInfo.device_type);
@@ -902,7 +902,7 @@ class RoomClient {
     }
 
     // Track attendance - join session (with name and device metadata)
-    // Await to store log_id from response
+    // Await to store attendance_id from response
     this.trackAttendance(room_id, 'join', name, null).catch(err => {
       console.error('Failed to track attendance (join):', err);
     });
@@ -1663,13 +1663,13 @@ class RoomClient {
         // Append metadata as JSON string (backend can parse it)
         formData.append('metadata', JSON.stringify(deviceInfo));
       } else if (action === 'leave') {
-        // For leave action, send name, device info, timestamp, and log_id
+        // For leave action, send name, device info, timestamp, and attendance_id
         if (name) {
           formData.append('name', name);
         }
-        // Include log_id if available (from join response)
-        if (this.log_id) {
-          formData.append('log_id', this.log_id);
+        // Include attendance_id if available (from join response)
+        if (this.attendance_id) {
+          formData.append('attendance_id', this.attendance_id);
         }
         const deviceInfo = metadata || this.getDeviceInfo();
         formData.append('device_name', deviceInfo.device_name || deviceInfo.device_type);
@@ -1701,12 +1701,12 @@ class RoomClient {
       const data = await response.json().catch(() => ({}));
       console.log(`Attendance tracked successfully (${action}):`, data);
 
-      // Store log_id from join API response
+      // Store attendance_id from join API response
       if (action === 'join' && data) {
-        const logId = data?.data?.log_id || data?.log_id || data?.data?.id || data?.id;
-        if (logId) {
-          this.log_id = logId;
-          console.log('Stored log_id from join response:', logId);
+        const attendanceId = data?.data?.attendance?.attendance_id || data?.data?.attendance_id || data?.attendance_id;
+        if (attendanceId) {
+          this.attendance_id = attendanceId;
+          console.log('Stored attendance_id from join response:', attendanceId);
         }
       }
 
