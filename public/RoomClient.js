@@ -2252,15 +2252,34 @@ class RoomClient {
         const track = audio ? stream.getAudioTracks()[0] : stream.getVideoTracks()[0]
         const params = { track }
         if (!audio && !screen) {
-          // Temporarily disable simulcast to avoid Chrome ERROR_CONTENT issues with VP8.
-          params.encodings = [
-            {
-              maxBitrate: isMobileDevice ? 500000 : 1200000
-            }
-          ]
-          if (!isMobileDevice) {
+          if (isMobileDevice) {
+            // Simplified encoding for mobile devices - no simulcast, no codec options
+            params.encodings = [
+              {
+                maxBitrate: 500000
+              }
+            ]
+            // Don't set codecOptions for mobile - it can cause SDP negotiation issues
+          } else {
+            params.encodings = [
+              {
+                rid: 'r0',
+                maxBitrate: 100000,
+                scalabilityMode: 'S1T3'
+              },
+              {
+                rid: 'r1',
+                maxBitrate: 300000,
+                scalabilityMode: 'S1T3'
+              },
+              {
+                rid: 'r2',
+                maxBitrate: 900000,
+                scalabilityMode: 'S1T3'
+              }
+            ]
             params.codecOptions = {
-              videoGoogleStartBitrate: 1200
+              videoGoogleStartBitrate: 1000
             }
           }
         }
