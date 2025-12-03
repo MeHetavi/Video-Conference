@@ -2261,21 +2261,22 @@ class RoomClient {
             ]
             // Don't set codecOptions for mobile - it can cause SDP negotiation issues
           } else {
+            // Chrome rejects VP8 offers that advertise SVC-specific scalability modes,
+            // so fall back to classic simulcast layering.
             params.encodings = [
               {
                 rid: 'r0',
                 maxBitrate: 100000,
-                scalabilityMode: 'S1T3'
+                scaleResolutionDownBy: 4
               },
               {
                 rid: 'r1',
                 maxBitrate: 300000,
-                scalabilityMode: 'S1T3'
+                scaleResolutionDownBy: 2
               },
               {
                 rid: 'r2',
-                maxBitrate: 900000,
-                scalabilityMode: 'S1T3'
+                maxBitrate: 900000
               }
             ]
             params.codecOptions = {
